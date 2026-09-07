@@ -1,0 +1,46 @@
+const express = require('express');
+const path = require('path');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const taskRoutes = require('./routes/taskRoutes');
+const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const errorHandler = require("./middleware/errorHandler");
+
+dotenv.config();
+
+connectDB();
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static uploaded files & images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use((req, res, next) => {
+  console.log(`[API REQUEST] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+app.use("/api/auth", authRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TaskFlow API is running'
+  });
+});
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`TaskFlow API running on port ${PORT}`);
+});

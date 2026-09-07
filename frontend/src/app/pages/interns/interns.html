@@ -1,0 +1,86 @@
+<div class="interns-page">
+  <div class="interns-container">
+
+    <div class="interns-header">
+      <div>
+        <div class="title-row">
+          <h1>Company Interns Directory</h1>
+          <span class="role-badge manager-badge">Manager View</span>
+        </div>
+        <p>Monitor all registered interns, workload distribution, and task completion.</p>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/create-intern" class="action-btn create-intern-btn">
+          ➕ Create New Intern
+        </a>
+        <a routerLink="/create-task" class="create-button">+ Assign Task</a>
+      </div>
+    </div>
+
+    @if (errorMessage) {
+      <div class="alert alert-error flex-alert">
+        <span>{{ errorMessage }}</span>
+        <button (click)="loadInterns()" class="retry-btn">
+          Retry
+        </button>
+      </div>
+    }
+
+    @if (isLoading) {
+      <div class="loading-box">
+        <span class="spinner">⚡</span> Loading interns list...
+      </div>
+    }
+
+    @if (!isLoading && interns.length === 0) {
+      <div class="empty-box">
+        <h3>No Interns Registered Yet</h3>
+        <p>When interns register with the role "Intern", they will appear in this directory automatically.</p>
+      </div>
+    }
+
+    @if (!isLoading && interns.length > 0) {
+      <div class="interns-grid">
+        @for (intern of interns; track intern._id) {
+          <div class="intern-card">
+            <div class="intern-card-header">
+              <div class="avatar">
+                {{ (intern.name || 'I').charAt(0).toUpperCase() }}
+              </div>
+              <div class="intern-info">
+                <h3>{{ intern.name }}</h3>
+                <span class="intern-email">✉ {{ intern.email }}</span>
+              </div>
+            </div>
+
+            <div class="intern-metrics">
+              <div class="metric">
+                <span class="metric-num">{{ intern.totalTasks }}</span>
+                <span class="metric-label">Total</span>
+              </div>
+              <div class="metric">
+                <span class="metric-num pending-num">{{ intern.pendingTasks }}</span>
+                <span class="metric-label">Active</span>
+              </div>
+              <div class="metric">
+                <span class="metric-num completed-num">{{ intern.completedTasks }}</span>
+                <span class="metric-label">Completed</span>
+              </div>
+            </div>
+
+            <div class="intern-footer">
+              <a [routerLink]="['/create-task']" [queryParams]="{ internEmail: intern.email, internId: intern._id }" class="action-btn assign-btn">
+                ➕ Assign Task
+              </a>
+              <a [routerLink]="['/tasks']" [queryParams]="{ internId: intern._id }" class="action-btn view-btn">
+                📋 View Tasks ({{ intern.totalTasks }})
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>

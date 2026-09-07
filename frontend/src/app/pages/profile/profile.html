@@ -1,0 +1,143 @@
+<div class="profile-page">
+  <div class="profile-container">
+
+    <!-- Header Navigation -->
+    <div class="profile-header">
+      <div>
+        <h1>User Profile</h1>
+        <p>Manage your account details and password security.</p>
+      </div>
+      <div class="header-actions">
+        <a routerLink="/dashboard" class="nav-button">← Back to Dashboard</a>
+        <button (click)="logout()" class="logout-button">Logout</button>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+
+        <!-- User Summary Card -->
+        <div class="profile-card summary-card">
+          <div class="avatar-circle">
+            {{ user.name ? user.name.charAt(0).toUpperCase() : 'U' }}
+          </div>
+          <h2>{{ user.name }}</h2>
+          <p class="user-email">{{ user.email }}</p>
+          <div class="info-badge">
+            <span>Account Status</span>
+            <strong>Active</strong>
+          </div>
+          @if (user.createdAt) {
+            <p class="joined-date">Joined: {{ user.createdAt | date:'mediumDate' }}</p>
+          }
+        </div>
+
+        <!-- Settings Section -->
+        <div class="settings-column">
+
+          <!-- Edit Profile Form -->
+          <div class="profile-card">
+            <h3>Update Profile Information</h3>
+            <p class="card-subtitle">Update your personal account information.</p>
+
+            @if (profileError) {
+              <div class="alert alert-error">{{ profileError }}</div>
+            }
+
+            @if (profileSuccess) {
+              <div class="alert alert-success">{{ profileSuccess }}</div>
+            }
+
+            <form (ngSubmit)="onUpdateProfile()">
+              <div class="form-group">
+                <label for="name">Full Name</label>
+                <input
+                  id="name"
+                  type="text"
+                  [(ngModel)]="name"
+                  name="name"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  [(ngModel)]="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              <button type="submit" [disabled]="isUpdatingProfile" class="save-button">
+                {{ isUpdatingProfile ? 'Saving...' : 'Save Profile Changes' }}
+              </button>
+            </form>
+          </div>
+
+          <!-- Change Password Form -->
+          <div class="profile-card">
+            <h3>Change Password</h3>
+            <p class="card-subtitle">Ensure your account is using a strong password.</p>
+
+            @if (passwordError) {
+              <div class="alert alert-error">{{ passwordError }}</div>
+            }
+
+            @if (passwordSuccess) {
+              <div class="alert alert-success">{{ passwordSuccess }}</div>
+            }
+
+            <form (ngSubmit)="onChangePassword()">
+              <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input
+                  id="currentPassword"
+                  type="password"
+                  [(ngModel)]="currentPassword"
+                  name="currentPassword"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  [(ngModel)]="newPassword"
+                  name="newPassword"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  [(ngModel)]="confirmPassword"
+                  name="confirmPassword"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <button type="submit" [disabled]="isChangingPassword" class="save-button">
+                {{ isChangingPassword ? 'Updating...' : 'Update Password' }}
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+      </div>
+
+  </div>
+</div>
+

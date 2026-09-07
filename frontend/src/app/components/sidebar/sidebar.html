@@ -1,0 +1,49 @@
+<div class="sidebar-backdrop" [class.open]="isOpen" (click)="onClose()"></div>
+
+<aside class="app-sidebar" [class.open]="isOpen">
+
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="logo-text">TaskFlow</span>
+    </div>
+    <button (click)="onClose()" class="close-btn" aria-label="Close sidebar">✕</button>
+  </div>
+
+  <nav class="sidebar-menu">
+
+    <a routerLink="/dashboard" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
+      <span class="link-icon">📊</span>
+      <span>Dashboard</span>
+    </a>
+
+    <a routerLink="/tasks" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
+      <span class="link-icon">📋</span>
+      <span>{{ isManager ? 'Assigned Tasks' : 'My Tasks' }}</span>
+    </a>
+
+    @if (isManager) {
+    <a routerLink="/interns" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
+      <span class="link-icon">👥</span>
+      <span>Interns List</span>
+    </a>
+
+    <a routerLink="/create-intern" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
+      <span class="link-icon">👤</span>
+      <span>Create New Interns</span>
+    </a>
+
+    <a routerLink="/create-task" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
+      <span class="link-icon">➕</span>
+      <span>Assign Task</span>
+    </a>
+    }
+
+  </nav>
+
+  <div class="sidebar-footer">
+    <button (click)="logout()" class="sidebar-logout">
+      <span>🚪 Logout</span>
+    </button>
+  </div>
+
+</aside>

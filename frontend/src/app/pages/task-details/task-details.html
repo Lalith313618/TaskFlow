@@ -1,0 +1,380 @@
+<div class="task-details-page">
+  <div class="details-container">
+
+    <div class="page-top-nav">
+      <a routerLink="/tasks" class="back-link">← Back to Tasks</a>
+    </div>
+
+    @if (isLoading) {
+      <div class="loading-state">
+        <span class="spinner">⚡</span> Loading task details & messages...
+      </div>
+    }
+
+    @if (errorMessage) {
+      <div class="alert alert-error">{{ errorMessage }}</div>
+    }
+
+    @if (successMessage) {
+      <div class="alert alert-success">{{ successMessage }}</div>
+    }
+
+    @if (!isLoading && task) {
+      <div class="details-layout">
+
+        <!-- Left Column: Task Info & Work Submission -->
+        <div class="details-main-column">
+
+          <!-- Task Information Card -->
+          <div class="task-info-card">
+
+            <div class="card-header-bar">
+              <span class="badge priority-badge" [class]="'priority-' + task.priority">
+                {{ task.priority | uppercase }} PRIORITY
+              </span>
+
+              <div class="status-control">
+                <label for="statusSelect">Status:</label>
+                <select
+                  id="statusSelect"
+                  [ngModel]="task.status"
+                  (ngModelChange)="updateStatus($event)"
+                  [disabled]="isUpdatingStatus"
+                  class="status-select-btn"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+
+            <h1 class="task-title">{{ task.title }}</h1>
+
+            @if (task.description) {
+              <div class="desc-box">
+                <h3>Task Instructions & Requirements</h3>
+                <p>{{ task.description }}</p>
+              </div>
+            }
+
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span class="meta-label">📅 Due Date</span>
+                <strong class="meta-value">{{ task.dueDate ? (task.dueDate | date:'mediumDate') : 'No deadline' }}</strong>
+              </div>
+
+              <div class="meta-item">
+                <span class="meta-label">🎓 Assigned Intern</span>
+                <strong class="meta-value">
+                  {{ task.assignedTo?.name || 'Unassigned' }}
+                  <small class="user-email-text">{{ task.assignedTo?.email }}</small>
+                </strong>
+              </div>
+
+              <div class="meta-item">
+                <span class="meta-label">👑 Assigned By</span>
+                <strong class="meta-value">
+                  {{ task.assignedBy?.name || 'Manager' }}
+                  <small class="user-email-text">{{ task.assignedBy?.email }}</small>
+                </strong>
+              </div>
+
+              <div class="meta-item">
+                <span class="meta-label">🕒 Created On</span>
+                <strong class="meta-value">{{ task.createdAt | date:'mediumDate' }}</strong>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Dedicated Work Submission & Completion Proof Card -->
+          <div class="work-submission-card">
+
+            <div class="submission-card-header">
+              <div class="header-title-group">
+                <h2>📋 Work Submission & Completion Proof</h2>
+                <p class="subtitle">Proof of work, completion notes, screenshots, and attached files.</p>
+              </div>
+
+              @if (task.submission?.submittedAt) {
+                <span class="submitted-badge">
+                  ✓ Submitted {{ task.submission.submittedAt | date:'mediumDate' }}
+                </span>
+              }
+            </div>
+
+            <!-- Submission Alerts -->
+            @if (submissionSuccess) {
+              <div class="alert alert-success">{{ submissionSuccess }}</div>
+            }
+            @if (submissionError) {
+              <div class="alert alert-error">{{ submissionError }}</div>
+            }
+
+            <!-- 1. MANAGER VIEW -->
+            @if (isManager) {
+              @if (task.submission && (task.submission.description || (task.submission.attachments && task.submission.attachments.length > 0))) {
+                <div class="submission-content-view">
+                  <div class="submission-meta-strip">
+                    <span>🎓 Submitted by <strong>{{ task.submission.submittedBy?.name || task.assignedTo?.name }}</strong></span>
+                    <span>🕒 {{ task.submission.submittedAt | date:'medium' }}</span>
+                  </div>
+
+                  @if (task.submission.description) {
+                    <div class="submission-notes-box">
+                      <h4>Work Summary & Description:</h4>
+                      <p>{{ task.submission.description }}</p>
+                    </div>
+                  }
+
+                  @if (task.submission.attachments && task.submission.attachments.length > 0) {
+                    <div class="attachments-section">
+                      <h4>Attached Files & Proof ({{ task.submission.attachments.length }}):</h4>
+
+                      <!-- Images Gallery -->
+                      <div class="attachments-grid">
+                        @for (att of task.submission.attachments; track att.fileUrl) {
+                          <div class="attachment-item">
+                            @if (isImageAttachment(att)) {
+                              <div class="img-preview-box" (click)="openImageModal(att.fileUrl)" title="Click to enlarge">
+                                <img [src]="getFullFileUrl(att.fileUrl)" [alt]="att.fileName" loading="lazy" />
+                                <div class="img-overlay">🔍 View Full Image</div>
+                              </div>
+                            } @else {
+                              <div class="doc-icon-box">
+                                📄
+                              </div>
+                            }
+                            <div class="att-meta">
+                              <span class="att-name" [title]="att.fileName">{{ att.fileName }}</span>
+                              <span class="att-size">{{ formatFileSize(att.fileSize) }}</span>
+                            </div>
+                            <a [href]="getFullFileUrl(att.fileUrl)" target="_blank" download class="download-link" title="Download file">
+                              ⬇️ Download
+                            </a>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-submission-placeholder">
+                  <span class="icon">⏳</span>
+                  <h4>No Work Proof Submitted Yet</h4>
+                  <p>When the intern marks their work complete and submits notes, screenshots, or files, they will appear right here for your review.</p>
+                </div>
+              }
+            }
+
+            <!-- 2. INTERN VIEW -->
+            @if (!isManager) {
+
+              <!-- Already Submitted View -->
+              @if (task.submission && !isEditingSubmission) {
+                <div class="submission-content-view">
+                  <div class="submission-meta-strip">
+                    <span>✅ <strong>Your work has been submitted</strong></span>
+                    <span>🕒 {{ task.submission.submittedAt | date:'medium' }}</span>
+                  </div>
+
+                  @if (task.submission.description) {
+                    <div class="submission-notes-box">
+                      <h4>Your Work Summary:</h4>
+                      <p>{{ task.submission.description }}</p>
+                    </div>
+                  }
+
+                  @if (task.submission.attachments && task.submission.attachments.length > 0) {
+                    <div class="attachments-section">
+                      <h4>Your Attached Files ({{ task.submission.attachments.length }}):</h4>
+                      <div class="attachments-grid">
+                        @for (att of task.submission.attachments; track att.fileUrl) {
+                          <div class="attachment-item">
+                            @if (isImageAttachment(att)) {
+                              <div class="img-preview-box" (click)="openImageModal(att.fileUrl)" title="Click to view full image">
+                                <img [src]="getFullFileUrl(att.fileUrl)" [alt]="att.fileName" loading="lazy" />
+                                <div class="img-overlay">🔍 View Full</div>
+                              </div>
+                            } @else {
+                              <div class="doc-icon-box">
+                                📄
+                              </div>
+                            }
+                            <div class="att-meta">
+                              <span class="att-name" [title]="att.fileName">{{ att.fileName }}</span>
+                              <span class="att-size">{{ formatFileSize(att.fileSize) }}</span>
+                            </div>
+                            <a [href]="getFullFileUrl(att.fileUrl)" target="_blank" download class="download-link">
+                              ⬇️ Download
+                            </a>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <div class="submission-edit-action">
+                    <button type="button" (click)="startEditSubmission()" class="edit-submission-btn">
+                      ✏️ Edit or Add More Proof
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Submission Form (Not submitted yet OR in edit mode) -->
+              @if (!task.submission || isEditingSubmission) {
+                <div class="submission-form">
+
+                  <div class="form-group">
+                    <label for="submissionNotes">Work Summary & Notes</label>
+                    <textarea
+                      id="submissionNotes"
+                      [(ngModel)]="submissionDescription"
+                      rows="3"
+                      class="submission-textarea"
+                      placeholder="Explain what you did, steps completed, links or findings..."
+                    ></textarea>
+                  </div>
+
+                  <!-- File / Image Upload Box -->
+                  <div class="form-group">
+                    <label>Attachments & Proof of Work (Images, PDFs, Documents, ZIPs)</label>
+
+                    <input
+                      #fileInput
+                      type="file"
+                      id="proofFileInput"
+                      (change)="onFilesSelected($event)"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+                      class="hidden-file-input"
+                    />
+
+                    <div class="upload-dropzone" (click)="fileInput.click()">
+                      <span class="upload-icon">📁 🖼️</span>
+                      <p class="upload-text"><strong>Click to select images or documents</strong></p>
+                      <span class="upload-hint">PNG, JPG, WEBP, PDF, DOCX, ZIP (Up to 20MB each)</span>
+                    </div>
+                  </div>
+
+                  <!-- Staged Files Preview List -->
+                  @if (selectedFilePreviews.length > 0) {
+                    <div class="staged-files-list">
+                      <h4>Selected Files ({{ selectedFilePreviews.length }}):</h4>
+                      <div class="staged-grid">
+                        @for (file of selectedFilePreviews; track file.name; let i = $index) {
+                          <div class="staged-card">
+                            @if (file.isImage && file.previewUrl) {
+                              <img [src]="file.previewUrl" [alt]="file.name" class="staged-img-thumb" />
+                            } @else {
+                              <div class="staged-doc-thumb">📄</div>
+                            }
+                            <div class="staged-info">
+                              <span class="staged-filename" [title]="file.name">{{ file.name }}</span>
+                              <span class="staged-size">{{ file.size }}</span>
+                            </div>
+                            <button type="button" (click)="removeSelectedFile(i)" class="remove-file-btn" title="Remove file">
+                              ✕
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <div class="submission-actions">
+                    <button
+                      type="button"
+                      (click)="submitWork()"
+                      [disabled]="isSubmittingWork"
+                      class="submit-work-btn"
+                    >
+                      {{ isSubmittingWork ? 'Uploading & Submitting...' : '🚀 Submit Completed Work' }}
+                    </button>
+
+                    @if (isEditingSubmission) {
+                      <button
+                        type="button"
+                        (click)="cancelEditSubmission()"
+                        [disabled]="isSubmittingWork"
+                        class="cancel-btn"
+                      >
+                        Cancel
+                      </button>
+                    }
+                  </div>
+
+                </div>
+              }
+
+            }
+
+          </div>
+
+        </div>
+
+        <!-- Right Column: Task Conversation / Response Thread -->
+        <div class="task-discussion-card">
+
+          <div class="discussion-header">
+            <h3>💬 Task Communication Thread</h3>
+            <p>Exchange feedback, progress updates, and questions regarding this assignment.</p>
+          </div>
+
+          <!-- Messages Container -->
+          <div class="messages-container">
+            @if (responses.length === 0) {
+              <div class="empty-messages">
+                <span class="empty-msg-icon">💬</span>
+                <p>No messages yet. Start the conversation by sending an update or question below!</p>
+              </div>
+            }
+
+            @for (msg of responses; track msg._id) {
+              <div class="message-bubble" [class.my-message]="msg.sender?._id === currentUserId">
+                <div class="bubble-header">
+                  <span class="sender-name">{{ msg.sender?.name || 'User' }}</span>
+                  <span class="sender-badge" [class.badge-mgr]="msg.sender?.role === 'manager'" [class.badge-int]="msg.sender?.role === 'intern'">
+                    {{ msg.sender?.role === 'manager' ? '👑 Manager' : '🎓 Intern' }}
+                  </span>
+                  <span class="bubble-time">{{ msg.createdAt | date:'shortTime' }}</span>
+                </div>
+                <div class="bubble-body">{{ msg.message }}</div>
+              </div>
+            }
+          </div>
+
+          <!-- Message Input Bar -->
+          <form (ngSubmit)="sendResponse()" class="message-input-form">
+            <textarea
+              [(ngModel)]="newMessage"
+              name="newMessage"
+              placeholder="Type your response or update..."
+              rows="2"
+              (keydown.enter)="$event.preventDefault(); sendResponse()"
+              required
+            ></textarea>
+            <button type="submit" [disabled]="isSending || !newMessage.trim()" class="send-btn">
+              {{ isSending ? 'Sending...' : 'Send 📤' }}
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+    }
+
+    <!-- Image Lightbox Modal -->
+    @if (previewModalImage) {
+      <div class="image-modal-backdrop" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <button class="modal-close-btn" (click)="closeImageModal()" title="Close">✕</button>
+          <img [src]="previewModalImage" alt="Work Attachment Preview" class="modal-img" />
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

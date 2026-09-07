@@ -1,0 +1,272 @@
+.interns-page {
+  min-height: 100vh;
+  padding: 30px;
+  background: #e6f4f1;
+}
+
+.interns-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.interns-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.interns-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.interns-header p {
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.role-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.manager-badge {
+  background: #fef08a;
+  color: #854d0e;
+  border: 1px solid #facc15;
+}
+
+.create-button {
+  background: #0f766e;
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+  transition: background 0.2s;
+}
+
+.create-button:hover {
+  background: #0d9488;
+}
+
+.interns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.intern-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.intern-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.07);
+}
+
+.intern-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0f766e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.intern-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.intern-email {
+  font-size: 13px;
+  color: #64748b;
+  word-break: break-all;
+}
+
+.intern-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.metric-num {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.pending-num {
+  color: #ea580c;
+}
+
+.completed-num {
+  color: #16a34a;
+}
+
+.intern-footer {
+  display: flex;
+  gap: 10px;
+}
+
+.action-btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.assign-btn {
+  background: #0f766e;
+  color: white;
+}
+
+.assign-btn:hover {
+  background: #0d9488;
+}
+
+.view-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.view-btn:hover {
+  background: #cbd5e1;
+}
+
+.loading-box, .empty-box {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-intern-btn {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.create-intern-btn:hover {
+  background: #f1f5f9;
+}
+
+.flex-alert {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retry-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.retry-btn:hover {
+  background: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .interns-page {
+    padding: 16px 12px;
+  }
+
+  .interns-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .interns-header h1 {
+    font-size: 22px;
+  }
+
+  .interns-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .intern-card {
+    padding: 16px;
+  }
+}

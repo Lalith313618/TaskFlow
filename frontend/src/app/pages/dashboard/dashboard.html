@@ -1,0 +1,159 @@
+<div class="dashboard-page">
+
+  <div class="dashboard-container">
+
+    <div class="dashboard-header">
+      <div>
+        <div class="dash-title-row">
+          <h1 class="dash-title">{{ isManager ? 'Manager Portal' : 'Intern Dashboard' }}</h1>
+          <span class="role-badge" [class.role-mgr]="isManager" [class.role-int]="!isManager">
+            {{ isManager ? 'Manager' : 'Intern' }}
+          </span>
+        </div>
+        <p>
+          Welcome back, <strong>{{ userName || 'User' }}</strong>.
+          {{ isManager ? 'Monitor company tasks, intern progress, and team workload.' : 'Review your assigned tasks and update your daily progress.' }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        @if (isManager) {
+          <a routerLink="/interns" class="profile-button">👥 Interns List</a>
+          <a routerLink="/create-task" class="create-button">+ Assign Task</a>
+        } @else {
+          <a routerLink="/tasks" class="create-button">📋 View My Tasks</a>
+        }
+      </div>
+    </div>
+
+    @if (errorMessage) {
+      <div class="error-container">
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+        <button (click)="loadStats()" class="retry-button">🔄 Retry Loading</button>
+      </div>
+    }
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+          <span class="stat-label">{{ isManager ? 'Tasks Assigned' : 'My Total Tasks' }}</span>
+          <strong>{{ stats.totalTasks }}</strong>
+        </div>
+
+        @if (isManager) {
+          <div class="stat-card intern-stat-card">
+            <span class="stat-label">Active Interns</span>
+            <strong>{{ stats.totalInterns || 0 }}</strong>
+          </div>
+        }
+
+        <div class="stat-card">
+          <span class="stat-label">Pending</span>
+          <strong class="pending-color">{{ stats.pending }}</strong>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">In Progress</span>
+          <strong class="inprogress-color">{{ stats.inProgress }}</strong>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Completed</span>
+          <strong class="completed-color">{{ stats.completed }}</strong>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">High Priority</span>
+          <strong class="high-color">{{ stats.highPriority }}</strong>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-label">Overdue</span>
+          <strong class="overdue-color">{{ stats.overdue }}</strong>
+        </div>
+
+    </div>
+
+    <div class="dashboard-section">
+
+        <div>
+          <h2>{{ isManager ? 'Intern Assignment Summary' : 'Current Workload Overview' }}</h2>
+          <p>{{ isManager ? 'Real-time overview of tasks across all registered company interns.' : 'Keep track of pending deliverables and priority assignments.' }}</p>
+        </div>
+
+        <div class="overview-grid">
+
+          <div class="overview-item">
+            <span>Pending Review</span>
+            <strong>{{ stats.pending }}</strong>
+          </div>
+
+          <div class="overview-item">
+            <span>In Active Progress</span>
+            <strong>{{ stats.inProgress }}</strong>
+          </div>
+
+          <div class="overview-item">
+            <span>Successfully Completed</span>
+            <strong>{{ stats.completed }}</strong>
+          </div>
+
+        </div>
+
+    </div>
+
+    <!-- Live Recent Tasks Feed -->
+    <div class="dashboard-section recent-section">
+      <div class="recent-header">
+        <div>
+          <h2 class="recent-title">{{ isManager ? 'Recent Assigned Tasks' : 'Recent Work Items' }}</h2>
+          <p class="recent-subtitle">Live overview of the latest tasks in the workspace.</p>
+        </div>
+        <a routerLink="/tasks" class="profile-button view-all-btn">
+          View All Tasks →
+        </a>
+      </div>
+
+      @if (recentTasks.length === 0) {
+        <div class="recent-empty">
+          No tasks recorded yet. Click <strong>+ Assign Task</strong> to create one.
+        </div>
+      }
+
+      @if (recentTasks.length > 0) {
+        <div class="recent-list">
+          @for (task of recentTasks; track task._id) {
+            <div class="recent-item">
+              <div class="recent-item-info">
+                <div class="recent-title-badges">
+                  <strong class="recent-item-title">{{ task.title }}</strong>
+                  <span class="status-badge" [class]="'status-' + task.status">
+                    {{ task.status }}
+                  </span>
+                  <span class="priority-badge" [class]="'priority-' + task.priority">
+                    {{ task.priority }}
+                  </span>
+                </div>
+                <div class="recent-meta">
+                  @if (task.assignedTo) {
+                    <span>🎓 Assigned to: <strong>{{ task.assignedTo.name }}</strong> ({{ task.assignedTo.email }})</span>
+                  }
+                  @if (task.dueDate) {
+                    <span class="recent-due">📅 Due: {{ task.dueDate | date:'mediumDate' }}</span>
+                  }
+                </div>
+              </div>
+              <a [routerLink]="['/tasks', task._id]" class="recent-view-link">
+                View Details →
+              </a>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+
+</div>

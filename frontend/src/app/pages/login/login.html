@@ -1,0 +1,94 @@
+<div class="login-page">
+
+  <div class="login-container">
+    <div class="brand-section">
+      <div class="brand-content">
+
+        <div class="logo">
+          TF
+        </div>
+
+        <h1>Task Flow</h1>
+
+        <p>
+          Organize your work.<br>
+          Focus on what matters.
+        </p>
+
+        <div class="feature-list">
+          <span>✓ Manage your tasks</span>
+          <span>✓ Track your progress</span>
+          <span>✓ Stay productive</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="login-section">
+      <div class="login-form">
+        <div class="mobile-logo">
+          TF
+        </div>
+
+        <h2>Welcome back 👋</h2>
+
+        <p class="login-subtitle">
+          Sign in to continue to Task Flow
+        </p>
+
+        <form (ngSubmit)="login()">
+          <div class="form-group">
+            <label for="email">Email address</label>
+
+            <div class="input-wrapper">
+              <span>✉</span>
+
+              <input id="email" type="email" name="email" [(ngModel)]="email" placeholder="you@example.com"
+                autocomplete="email" />
+
+            </div>
+
+          </div>
+
+          <div class="form-group">
+
+            <label for="password">Password</label>
+
+            <div class="input-wrapper">
+              <span>🔒</span>
+
+              <input id="password" type="password" name="password" [(ngModel)]="password"
+                placeholder="Enter your password" autocomplete="current-password" />
+
+            </div>
+
+          </div>
+
+          @if (errorMessage) {
+          <div class="error-message">
+            {{ errorMessage }}
+          </div>
+          }
+
+          <button type="submit" [disabled]="isLoading">
+            {{ isLoading ? 'Signing in...' : 'Sign In' }}
+          </button>
+
+        </form>
+
+        <div class="divider">
+          <span>New to Task Flow?</span>
+        </div>
+
+        <a routerLink="/register" class="create-account">
+          Register
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

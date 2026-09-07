@@ -1,0 +1,8 @@
+@if (showNav) {
+  <app-navbar (toggleSidebar)="toggleSidebar()"></app-navbar>
+  <app-sidebar [isOpen]="isSidebarOpen" (close)="closeSidebar()"></app-sidebar>
+}
+
+<main class="main-content">
+  <router-outlet></router-outlet>
+</main>

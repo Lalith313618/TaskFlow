@@ -1,0 +1,249 @@
+<div class="create-intern-page">
+  <div class="intern-container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <div class="title-row">
+          <h1>Create & Manage Interns</h1>
+          <span class="role-badge manager-badge">Manager Portal</span>
+        </div>
+        <p>Register new interns with login credentials, update their profiles, or remove accounts.</p>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/interns" class="action-button secondary-btn">👥 View Directory</a>
+        <a routerLink="/create-task" class="action-button primary-btn">+ Assign Task</a>
+      </div>
+    </div>
+
+    <!-- Main Grid: Left side Registration Form, Right side Interns List -->
+    <div class="content-grid">
+
+      <!-- Registration Form Container -->
+      <div class="card-container register-card">
+        <div class="card-header">
+          <span class="card-icon">👤</span>
+          <div>
+            <h2>Register New Intern</h2>
+            <p>Enter details below to create an intern account. They can immediately log in with these credentials.</p>
+          </div>
+        </div>
+
+        @if (registerSuccess) {
+          <div class="alert alert-success">
+            <span>✓ {{ registerSuccess }}</span>
+          </div>
+        }
+
+        @if (registerError) {
+          <div class="alert alert-error">
+            <span>⚠ {{ registerError }}</span>
+          </div>
+        }
+
+        <form (ngSubmit)="onRegister()" class="intern-form">
+          <div class="form-group">
+            <label for="internName">Full Name *</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input
+                id="internName"
+                type="text"
+                [(ngModel)]="name"
+                name="name"
+                placeholder="e.g. John Doe"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="internEmail">Email Address (Login Username) *</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input
+                id="internEmail"
+                type="email"
+                [(ngModel)]="email"
+                name="email"
+                placeholder="e.g. intern@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="internPassword">Initial Password *</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔒</span>
+              <input
+                id="internPassword"
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="Minimum 6 characters"
+                required
+              />
+              <button type="button" (click)="togglePassword()" class="toggle-btn" title="Toggle password visibility">
+                {{ showPassword ? '🙈' : '👁' }}
+              </button>
+            </div>
+            <small class="hint-text">The intern will use this password to sign in to TaskFlow.</small>
+          </div>
+
+          <button type="submit" [disabled]="isRegistering" class="submit-btn">
+            {{ isRegistering ? 'Registering Intern...' : 'Create Intern Account' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Registered Interns Quick Management -->
+      <div class="card-container directory-card">
+        <div class="card-header space-between-header">
+          <div class="header-icon-title">
+            <span class="card-icon">👥</span>
+            <div>
+              <div class="title-row">
+                <h2>Registered Interns</h2>
+                <span class="count-pill">{{ filteredInterns.length }}</span>
+              </div>
+              <p>Manage existing intern accounts, edit profiles, or delete users.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-wrap">
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+            placeholder="🔍 Search intern by name or email..."
+            class="search-input"
+          />
+        </div>
+
+        @if (isLoadingInterns) {
+          <div class="loading-state">
+            <span class="spinner">⚡</span> Loading interns list...
+          </div>
+        }
+
+        @if (!isLoadingInterns && filteredInterns.length === 0) {
+          <div class="empty-state">
+            <p>No interns found matching your search.</p>
+          </div>
+        }
+
+        @if (!isLoadingInterns && filteredInterns.length > 0) {
+          <div class="interns-list">
+            @for (intern of filteredInterns; track intern._id) {
+              <div class="intern-row">
+                <div class="intern-avatar">
+                  {{ (intern.name || 'I').charAt(0).toUpperCase() }}
+                </div>
+
+                <div class="intern-details">
+                  <strong class="intern-name">{{ intern.name }}</strong>
+                  <span class="intern-email">✉ {{ intern.email }}</span>
+                  <div class="intern-meta">
+                    <span class="meta-tag">{{ intern.totalTasks || 0 }} Tasks</span>
+                    <span class="meta-tag active-tag">{{ intern.pendingTasks || 0 }} Active</span>
+                  </div>
+                </div>
+
+                <div class="row-actions">
+                  <a [routerLink]="['/create-task']" [queryParams]="{ internEmail: intern.email, internId: intern._id }" class="icon-btn assign-btn" title="Assign Task">
+                    ➕ Task
+                  </a>
+                  <button (click)="openEditModal(intern)" class="icon-btn edit-btn" title="Edit Intern Details">
+                    ✏️ Edit
+                  </button>
+                  <button (click)="confirmDelete(intern)" class="icon-btn delete-btn" title="Delete Intern">
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Edit Intern Modal -->
+  @if (editingIntern) {
+    <div class="modal-backdrop">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Edit Intern Details</h3>
+          <button (click)="closeEditModal()" class="modal-close">✕</button>
+        </div>
+
+        @if (editSuccess) {
+          <div class="alert alert-success">{{ editSuccess }}</div>
+        }
+        @if (editError) {
+          <div class="alert alert-error">{{ editError }}</div>
+        }
+
+        <form (ngSubmit)="onSaveEdit()">
+          <div class="form-group">
+            <label for="editName">Full Name *</label>
+            <input id="editName" type="text" [(ngModel)]="editName" name="editName" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editEmail">Email Address *</label>
+            <input id="editEmail" type="email" [(ngModel)]="editEmail" name="editEmail" required />
+          </div>
+
+          <div class="form-group">
+            <label for="editPassword">Reset Password (Optional)</label>
+            <input
+              id="editPassword"
+              type="password"
+              [(ngModel)]="editPassword"
+              name="editPassword"
+              placeholder="Leave blank to keep existing password"
+            />
+            <small class="hint-text">Enter 6+ characters only if you want to reset this intern's password.</small>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" (click)="closeEditModal()" class="cancel-btn">Cancel</button>
+            <button type="submit" [disabled]="isSavingEdit" class="submit-btn modal-submit">
+              {{ isSavingEdit ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Intern Modal -->
+  @if (internToDelete) {
+    <div class="modal-backdrop">
+      <div class="modal-box delete-box">
+        <div class="delete-icon-wrap">🗑️</div>
+        <h3>Delete Intern Account</h3>
+        <p>Are you sure you want to delete <strong>{{ internToDelete.name }}</strong> ({{ internToDelete.email }})?</p>
+        <p class="delete-warning">⚠ This will permanently remove their user account and all tasks assigned to them. They will no longer be able to log in.</p>
+
+        @if (deleteError) {
+          <div class="alert alert-error">{{ deleteError }}</div>
+        }
+
+        <div class="modal-footer">
+          <button type="button" (click)="cancelDelete()" class="cancel-btn">Cancel</button>
+          <button type="button" (click)="onDeleteIntern()" [disabled]="isDeleting" class="danger-btn">
+            {{ isDeleting ? 'Deleting...' : 'Yes, Delete Intern' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

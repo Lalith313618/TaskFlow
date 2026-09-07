@@ -1,0 +1,183 @@
+<div class="tasks-page">
+  <div class="tasks-container">
+
+    <!-- Header Navigation -->
+    <div class="tasks-header">
+      <div>
+        <h1>{{ isManager ? 'Assigned Intern Tasks' : 'My Assigned Tasks' }}</h1>
+        <p>{{ isManager ? 'Track task execution and intern responses across the organization.' : 'Review deadlines, update work status, and message your manager.' }}</p>
+      </div>
+      <div class="header-actions">
+        @if (isManager) {
+          <a routerLink="/create-task" class="create-button">+ Assign Task</a>
+        }
+      </div>
+    </div>
+
+    @if (internId) {
+      <div class="intern-filter-banner">
+        <span class="intern-filter-text">Filtering tasks for selected intern</span>
+        <button (click)="clearInternFilter()" class="intern-filter-clear-btn">✕ Clear Filter</button>
+      </div>
+    }
+
+    <!-- Alert Notifications -->
+    @if (successMessage) {
+      <div class="alert alert-success">{{ successMessage }}</div>
+    }
+    @if (errorMessage) {
+      <div class="alert alert-error">{{ errorMessage }}</div>
+    }
+
+    <!-- Search, Filter & Sort Controls Bar -->
+    <div class="controls-bar">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="search"
+          (keyup.enter)="onSearch()"
+          placeholder="🔍 Search tasks by title..."
+        />
+        <button (click)="onSearch()" class="search-button">Search</button>
+      </div>
+
+      <div class="filter-group">
+        <select [(ngModel)]="status" (change)="onFilterChange()">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+
+        <select [(ngModel)]="priority" (change)="onFilterChange()">
+          <option value="">All Priorities</option>
+          <option value="low">Low Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
+
+        <select [(ngModel)]="sort" (change)="onSortChange()">
+          <option value="-createdAt">Newest First</option>
+          <option value="createdAt">Oldest First</option>
+          <option value="dueDate">Due Date</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (isLoading) {
+      <div class="empty-state loading-state-box">
+        <p class="empty-title loading-title">⚡ Loading tasks...</p>
+        <p class="empty-desc">Fetching assigned tasks and status updates.</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading && tasks.length === 0) {
+      <div class="empty-state">
+        <p class="empty-title">No tasks found</p>
+        <p class="empty-desc">{{ isManager ? 'No tasks assigned yet. Click Assign Task to allocate work to an intern.' : 'No tasks assigned to you currently. Check back later!' }}</p>
+        @if (isManager) {
+          <a routerLink="/create-task" class="create-button">+ Assign Task</a>
+        }
+      </div>
+    }
+
+    <!-- Tasks Grid -->
+    @if (!isLoading && tasks.length > 0) {
+      <div class="tasks-grid">
+        @for (task of tasks; track task._id) {
+          <div class="task-card" [class.task-completed]="task.status === 'completed'">
+            <div class="task-header">
+              <span class="badge priority-badge" [class]="'priority-' + task.priority">
+                {{ task.priority | uppercase }}
+              </span>
+              <span class="badge status-badge" [class]="'status-' + task.status">
+                {{ task.status }}
+              </span>
+            </div>
+
+            <h3 class="task-title">{{ task.title }}</h3>
+            @if (task.description) {
+              <p class="task-desc">{{ task.description }}</p>
+            }
+
+            <div class="task-info-list">
+              @if (isManager && task.assignedTo) {
+                <span>🎓 <strong>Intern:</strong> {{ task.assignedTo.name }} ({{ task.assignedTo.email }})</span>
+              }
+              @if (!isManager && task.assignedBy) {
+                <span>👑 <strong>Manager:</strong> {{ task.assignedBy.name }}</span>
+              }
+              @if (task.dueDate) {
+                <span>📅 <strong>Due:</strong> {{ task.dueDate | date:'mediumDate' }}</span>
+              }
+            </div>
+
+            <div class="task-footer">
+              <div class="task-actions">
+
+                <!-- Status Selector (Available to both Intern & Manager) -->
+                <div class="status-group">
+                  <span class="status-label">Status:</span>
+                  <select [ngModel]="task.status" (ngModelChange)="updateTaskStatus(task, $event)" class="status-select">
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+
+                <div class="task-btn-group">
+                  <!-- View Details & Discussion Thread Button -->
+                  <a [routerLink]="['/tasks', task._id]" class="icon-button thread-btn" title="Task Discussion">
+                    💬 Thread
+                  </a>
+
+                  @if (isManager) {
+                    <a [routerLink]="['/create-task']" [queryParams]="{ id: task._id }" class="icon-button edit-btn" title="Edit Task">
+                      ✏️
+                    </a>
+                    <button (click)="confirmDelete(task)" class="icon-button delete-btn" title="Delete Task">
+                      🗑️
+                    </button>
+                  }
+                </div>
+
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button (click)="goToPage(page - 1)" [disabled]="page === 1" class="page-button">
+            ← Prev
+          </button>
+
+          <span class="page-info">Page {{ page }} of {{ totalPages }} ({{ totalTasks }} tasks)</span>
+
+          <button (click)="goToPage(page + 1)" [disabled]="page === totalPages" class="page-button">
+            Next →
+          </button>
+        </div>
+      }
+    }
+
+    <!-- Delete Modal Confirmation -->
+    @if (taskToDelete) {
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <h3>Confirm Task Deletion</h3>
+          <p>Are you sure you want to delete <strong>"{{ taskToDelete.title }}"</strong>? This action cannot be undone.</p>
+          <div class="modal-actions">
+            <button (click)="cancelDelete()" class="modal-cancel">Cancel</button>
+            <button (click)="deleteTask()" class="modal-delete">Delete</button>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

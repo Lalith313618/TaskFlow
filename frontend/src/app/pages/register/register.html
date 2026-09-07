@@ -1,0 +1,191 @@
+<div class="register-page">
+
+  <div class="register-container">
+
+    <div class="brand-section">
+
+      <div class="brand-content">
+
+        <div class="logo">
+          TF
+        </div>
+
+        <h1>Task Flow</h1>
+
+        <p>
+          Organize your work.<br>
+          Stay focused. Get things done.
+        </p>
+
+        <div class="feature-list">
+          <span>✓ Manage your tasks</span>
+          <span>✓ Set priorities and deadlines</span>
+          <span>✓ Track your progress</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="register-section">
+      <div class="register-form">
+        <div class="mobile-logo">
+          TF
+        </div>
+
+        <h2>Register as Intern/Manager</h2>
+
+        <p class="register-subtitle">
+          Start managing your tasks with Task Flow
+        </p>
+
+        <form (ngSubmit)="register()">
+
+          <!-- Name -->
+          <div class="form-group">
+
+            <label for="name">
+              Full name
+            </label>
+
+            <div class="input-wrapper">
+
+              <span>👤</span>
+
+              <input
+                id="name"
+                type="text"
+                name="name"
+                [(ngModel)]="name"
+                placeholder="Enter your name"
+                autocomplete="name"
+              />
+
+            </div>
+
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+
+            <label for="email">
+              Email address
+            </label>
+
+            <div class="input-wrapper">
+
+              <span>✉</span>
+
+              <input
+                id="email"
+                type="email"
+                name="email"
+                [(ngModel)]="email"
+                placeholder="you@example.com"
+                autocomplete="email"
+              />
+
+            </div>
+
+          </div>
+
+          <!-- Role Selection -->
+          <div class="form-group">
+            <label for="role">
+              Account Role
+            </label>
+            <div class="input-wrapper">
+              <span>💼</span>
+              <select
+                id="role"
+                name="role"
+                [(ngModel)]="role"
+                class="role-select"
+              >
+                <option value="intern" class="role-option">Register as Intern </option>
+                <option value="manager" class="role-option">Register as Manager</option>
+              </select>
+            </div>
+          </div>
+
+          @if (role === 'manager') {
+            <div class="form-group">
+              <label for="managerAccessCode">
+                Manager Access Code
+              </label>
+              <div class="input-wrapper">
+                <span>🔑</span>
+                <input
+                  id="managerAccessCode"
+                  type="password"
+                  name="managerAccessCode"
+                  [(ngModel)]="managerAccessCode"
+                  placeholder="Enter manager access code"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+          }
+
+          <div class="form-group">
+
+            <label for="password">
+              Password
+            </label>
+
+            <div class="input-wrapper">
+
+              <span>🔒</span>
+
+              <input
+                id="password"
+                type="password"
+                name="password"
+                [(ngModel)]="password"
+                placeholder="Minimum 6 characters"
+                autocomplete="new-password"
+              />
+
+            </div>
+
+          </div>
+          @if (errorMessage) {
+            <div class="error-message">
+              {{ errorMessage }}
+            </div>
+          }
+
+          @if (successMessage) {
+            <div class="success-message">
+              {{ successMessage }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            [disabled]="isLoading"
+          >
+            {{ isLoading ? 'Creating account...' : 'Create Account' }}
+          </button>
+
+        </form>
+
+        <!-- Login Link -->
+        <div class="divider">
+          Already have an account?
+        </div>
+
+        <a
+          routerLink="/login"
+          class="login-link"
+        >
+          Sign in
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

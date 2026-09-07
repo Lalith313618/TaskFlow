@@ -1,0 +1,137 @@
+<div class="create-task-page">
+  <div class="form-container">
+
+    <div class="form-header">
+      <div>
+        <h1>{{ isEditMode ? 'Edit Task Assignment' : (isManager ? 'Assign Task to Intern' : 'Create Task') }}</h1>
+        <p>{{ isManager ? 'Assign work directly to an intern with due date and priority.' : 'Manage your task deliverables.' }}</p>
+      </div>
+      <a routerLink="/tasks" class="nav-button">← Back to Tasks</a>
+    </div>
+
+    @if (isLoading) {
+      <div class="loading">Loading task details...</div>
+    }
+
+    @if (!isLoading) {
+      <div class="form-card">
+
+        @if (errorMessage) {
+          <div class="alert alert-error">{{ errorMessage }}</div>
+        }
+
+        @if (successMessage) {
+          <div class="alert alert-success">{{ successMessage }}</div>
+        }
+
+        <form (ngSubmit)="onSubmit()">
+
+          <!-- Intern Assignment (for Manager) -->
+          @if (isManager) {
+            <div class="assign-intern-card">
+              <h3 class="assign-card-title">
+                <span>🎓 Assign to Intern</span>
+              </h3>
+
+              <div class="form-row">
+                <div class="form-group mb-0">
+                  <label for="internSelect">Select from Intern Directory</label>
+                  <select
+                    id="internSelect"
+                    [ngModel]="assignedTo"
+                    (change)="onInternSelect($event)"
+                    name="assignedTo"
+                    [disabled]="isLoadingInterns"
+                  >
+                    <option value="">-- Choose an Intern --</option>
+                    @for (intern of internsList; track intern._id) {
+                      <option [value]="intern._id">{{ intern.name }} ({{ intern.email }})</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="form-group mb-0">
+                  <label for="internEmail">Or Enter Intern Email *</label>
+                  <input
+                    id="internEmail"
+                    type="email"
+                    [(ngModel)]="internEmail"
+                    (input)="onInternEmailInput()"
+                    name="internEmail"
+                    placeholder="e.g. intern@example.com"
+                  />
+                </div>
+              </div>
+              <small class="assign-hint">
+                An email notification will be dispatched automatically upon task creation.
+              </small>
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="title">Task Title *</label>
+            <input
+              id="title"
+              type="text"
+              [(ngModel)]="title"
+              name="title"
+              placeholder="e.g. Implement User Authentication"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Task Description & Requirements</label>
+            <textarea
+              id="description"
+              rows="4"
+              [(ngModel)]="description"
+              name="description"
+              placeholder="Detailed instructions, milestones, or submission links expected..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status">Initial Status</label>
+              <select id="status" [(ngModel)]="status" name="status">
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="priority">Priority Level</label>
+              <select id="priority" [(ngModel)]="priority" name="priority">
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="dueDate">Due Date</label>
+            <input
+              id="dueDate"
+              type="date"
+              [(ngModel)]="dueDate"
+              name="dueDate"
+            />
+          </div>
+
+          <div class="form-actions">
+            <a routerLink="/tasks" class="cancel-button">Cancel</a>
+            <button type="submit" [disabled]="isSaving" class="submit-button">
+              {{ isSaving ? (isEditMode ? 'Updating...' : 'Assigning...') : (isEditMode ? 'Update Assignment' : 'Assign Task') }}
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    }
+
+  </div>
+</div>
