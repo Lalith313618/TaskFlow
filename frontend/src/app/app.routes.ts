@@ -13,6 +13,8 @@ import { TaskDetails } from './pages/task-details/task-details';
 import { authGuard } from './guards/auth-guard';
 import { managerGuard } from './guards/role-guard';
 
+import { Calendar } from './pages/calendar/calendar';
+
 export const routes: Routes = [
 
   {
@@ -70,6 +72,12 @@ export const routes: Routes = [
   {
     path: 'profile',
     component: Profile,
+    canActivate: [authGuard]
+  },
+
+  {
+    path: 'calendar',
+    component: Calendar,
     canActivate: [authGuard]
   },
 

@@ -45,6 +45,26 @@ const addResponse = asyncHandler(async (req, res) => {
 
   const populatedResponse = await TaskResponse.findById(responseDoc._id).populate("sender", "name email role");
 
+  const { emitToTask, emitToUser } = require('../socket');
+  // Broadcast message immediately to everyone in the task room
+  emitToTask(taskId.toString(), 'new_message', {
+    taskId: taskId.toString(),
+    response: populatedResponse
+  });
+
+  // Notify the other user (manager if sent by intern, intern if sent by manager)
+  const isSenderIntern = isAssignedIntern || isLegacyUser;
+  const targetRecipientId = isSenderIntern ? task.assignedBy : task.assignedTo;
+  if (targetRecipientId) {
+    emitToUser(targetRecipientId.toString(), 'notification', {
+      type: 'task_message',
+      title: 'New Discussion Message',
+      message: `${populatedResponse.sender?.name || 'User'} on "${task.title}": "${message.trim().substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+      taskId: taskId.toString(),
+      createdAt: new Date().toISOString()
+    });
+  }
+
   res.status(201).json({
     success: true,
     message: "Response sent successfully",

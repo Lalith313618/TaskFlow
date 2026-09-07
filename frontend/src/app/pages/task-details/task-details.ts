@@ -1,9 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
+import { SocketService } from '../../services/socket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-task-details',
@@ -12,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './task-details.html',
   styleUrl: './task-details.css'
 })
-export class TaskDetails implements OnInit {
+export class TaskDetails implements OnInit, OnDestroy {
 
   taskId = '';
   task: any = null;
@@ -40,10 +42,13 @@ export class TaskDetails implements OnInit {
   // Image Lightbox Modal
   previewModalImage: string | null = null;
 
+  private socketSubs: Subscription[] = [];
+
   constructor(
     private route: ActivatedRoute,
     private taskService: TaskService,
     private authService: AuthService,
+    private socketService: SocketService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -57,7 +62,52 @@ export class TaskDetails implements OnInit {
 
     if (this.taskId) {
       this.loadTaskData();
+      this.socketService.joinTask(this.taskId);
+
+      // Listen for incoming live chat messages
+      this.socketSubs.push(
+        this.socketService.onNewMessage().subscribe((data) => {
+          if (data && data.taskId === this.taskId && data.response) {
+            const exists = this.responses.some(r => r._id === data.response._id);
+            if (!exists) {
+              this.responses.push(data.response);
+              this.cdr.markForCheck();
+            }
+          }
+        })
+      );
+
+      // Listen for status changes
+      this.socketSubs.push(
+        this.socketService.onStatusChanged().subscribe((data) => {
+          if (data && data.taskId === this.taskId && this.task) {
+            this.task.status = data.status;
+            this.cdr.markForCheck();
+          }
+        })
+      );
+
+      // Listen for live work submissions
+      this.socketSubs.push(
+        this.socketService.onWorkSubmitted().subscribe((data) => {
+          if (data && data.taskId === this.taskId && this.task) {
+            this.task.status = 'completed';
+            if (data.task && data.task.submission) {
+              this.task.submission = data.task.submission;
+            }
+            this.loadResponses();
+            this.cdr.markForCheck();
+          }
+        })
+      );
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.taskId) {
+      this.socketService.leaveTask(this.taskId);
+    }
+    this.socketSubs.forEach(sub => sub.unsubscribe());
   }
 
   loadTaskData(): void {

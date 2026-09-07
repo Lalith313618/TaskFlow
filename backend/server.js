@@ -1,3 +1,4 @@
+const http = require('http');
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -7,6 +8,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const { initSocket } = require('./socket');
 
 dotenv.config();
 
@@ -41,6 +43,9 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`TaskFlow API running on port ${PORT}`);
 });

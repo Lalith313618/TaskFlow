@@ -2,6 +2,7 @@ const Task = require('../models/Task');
 const User = require('../models/User');
 const asyncHandler = require("../middleware/asyncHandler");
 const { sendTaskAssignedEmail } = require("../utils/emailService");
+const { emitToUser, emitToTask, emitToAll } = require('../socket');
 
 // @desc    Create and assign a task to an intern
 // @route   POST /api/tasks
@@ -73,6 +74,19 @@ const createTask = asyncHandler(async (req, res) => {
     priority: task.priority,
     managerName: managerUser ? managerUser.name : "Manager"
   }).catch((err) => console.error("Email notification dispatch error:", err.message));
+
+  // Real-time socket notification to assigned intern
+  if (internUser) {
+    emitToUser(internUser._id.toString(), 'notification', {
+      type: 'task_assigned',
+      title: 'New Task Assigned',
+      message: `${managerUser ? managerUser.name : 'Manager'} assigned you a new task: "${task.title}"`,
+      taskId: task._id.toString(),
+      priority: task.priority,
+      createdAt: new Date().toISOString()
+    });
+  }
+  emitToAll('task_created', { taskId: task._id.toString() });
 
   res.status(201).json({
     success: true,
@@ -288,6 +302,25 @@ const updateTaskStatus = asyncHandler(async (req, res) => {
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email");
 
+  // Real-time socket status emission
+  emitToTask(task._id.toString(), 'task_status_changed', {
+    taskId: task._id.toString(),
+    status: status,
+    updatedBy: req.user.userId
+  });
+
+  const otherPartyId = isAssignedIntern ? task.assignedBy : task.assignedTo;
+  if (otherPartyId) {
+    emitToUser(otherPartyId.toString(), 'notification', {
+      type: 'status_updated',
+      title: 'Task Status Updated',
+      message: `"${task.title}" status changed to ${status.toUpperCase()}`,
+      taskId: task._id.toString(),
+      status: status,
+      createdAt: new Date().toISOString()
+    });
+  }
+
   res.status(200).json({
     success: true,
     message: `Task status updated to ${status}`,
@@ -446,6 +479,23 @@ const submitTaskWork = asyncHandler(async (req, res) => {
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email")
     .populate("submission.submittedBy", "name email role");
+
+  // Real-time socket work submission emission
+  emitToTask(taskId.toString(), 'work_submitted', {
+    taskId: taskId.toString(),
+    task: updatedTask
+  });
+
+  if (task.assignedBy) {
+    const intern = await User.findById(req.user.userId);
+    emitToUser(task.assignedBy.toString(), 'notification', {
+      type: 'work_submitted',
+      title: 'Work Proof Submitted',
+      message: `${intern ? intern.name : 'Intern'} submitted work completion proof for "${task.title}"`,
+      taskId: taskId.toString(),
+      createdAt: new Date().toISOString()
+    });
+  }
 
   res.status(200).json({
     success: true,
