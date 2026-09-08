@@ -354,7 +354,7 @@
               name="newMessage"
               placeholder="Type your response or update..."
               rows="2"
-              (keydown.enter)="$event.preventDefault(); sendResponse()"
+              (keydown)="onKeydown($event)"
               required
             ></textarea>
             <button type="submit" [disabled]="isSending || !newMessage.trim()" class="send-btn">

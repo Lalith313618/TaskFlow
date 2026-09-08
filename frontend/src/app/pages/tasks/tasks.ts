@@ -54,7 +54,7 @@ export class Tasks implements OnInit {
   }
 
   loadTasks(isInitial = false): void {
-    if (isInitial) {
+    if (isInitial && this.tasks.length === 0) {
       this.isLoading = true;
     }
     this.isSyncing = true;

@@ -26,7 +26,9 @@ export class Interns implements OnInit {
   }
 
   loadInterns(): void {
-    this.isLoading = true;
+    if (this.interns.length === 0) {
+      this.isLoading = true;
+    }
     this.errorMessage = '';
     this.cdr.markForCheck();
 

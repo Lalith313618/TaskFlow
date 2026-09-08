@@ -91,11 +91,7 @@ export class TaskDetails implements OnInit, OnDestroy {
       this.socketSubs.push(
         this.socketService.onNewMessage().subscribe((data) => {
           if (data && data.taskId === this.taskId && data.response) {
-            const exists = this.responses.some(r => r._id === data.response._id);
-            if (!exists) {
-              this.responses.push(data.response);
-              this.cdr.markForCheck();
-            }
+            this.addResponseIfNotExists(data.response);
           }
         })
       );
@@ -195,23 +191,52 @@ export class TaskDetails implements OnInit, OnDestroy {
     });
   }
 
+  private addResponseIfNotExists(newResp: any): void {
+    if (!newResp) return;
+    const newId = (newResp._id || newResp.id)?.toString();
+    const exists = this.responses.some(r => {
+      const existingId = (r._id || r.id)?.toString();
+      if (newId && existingId && newId === existingId) {
+        return true;
+      }
+      // Deduplicate by sender + identical message within 4 seconds window
+      const sameSender = (r.sender?._id || r.sender)?.toString() === (newResp.sender?._id || newResp.sender)?.toString();
+      const sameMessage = (r.message || '').trim() === (newResp.message || '').trim();
+      const timeDiff = Math.abs(new Date(r.createdAt || 0).getTime() - new Date(newResp.createdAt || 0).getTime());
+      return sameSender && sameMessage && timeDiff < 4000;
+    });
+
+    if (!exists) {
+      this.responses.push(newResp);
+      this.cdr.markForCheck();
+    }
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendResponse();
+    }
+  }
+
   sendResponse(): void {
-    if (!this.newMessage.trim()) return;
+    if (this.isSending || !this.newMessage.trim()) return;
 
     this.isSending = true;
     const msg = this.newMessage.trim();
+    this.newMessage = ''; // Clear immediately to prevent accidental duplicate submission
 
     this.taskService.addResponse(this.taskId, msg).subscribe({
       next: (res) => {
         this.isSending = false;
-        this.newMessage = '';
         if (res.success && res.data) {
-          this.responses.push(res.data);
+          this.addResponseIfNotExists(res.data);
         }
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.isSending = false;
+        this.newMessage = msg; // Restore message on failure so user doesn't lose text
         this.errorMessage = err.error?.message || 'Failed to send message';
         this.cdr.markForCheck();
       }
