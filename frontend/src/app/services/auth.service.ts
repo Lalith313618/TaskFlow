@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { getBackendUrl } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private apiUrl = `http://${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost'}:5000/api/auth`;
+  private apiUrl = `${getBackendUrl()}/api/auth`;
   private currentUserSubject = new BehaviorSubject<any>(this.getUser());
   public currentUser$ = this.currentUserSubject.asObservable();
 

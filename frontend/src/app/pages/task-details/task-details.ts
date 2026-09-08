@@ -6,6 +6,7 @@ import { TaskService } from '../../services/task.service';
 import { AuthService } from '../../services/auth.service';
 import { SocketService } from '../../services/socket.service';
 import { Subscription } from 'rxjs';
+import { getBackendUrl } from '../../config/api.config';
 
 @Component({
   selector: 'app-task-details',
@@ -339,8 +340,7 @@ export class TaskDetails implements OnInit, OnDestroy {
   getFullFileUrl(url: string): string {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
-    return `http://${host}:5000${url}`;
+    return `${getBackendUrl()}${url}`;
   }
 
   isImageAttachment(attachment: any): boolean {

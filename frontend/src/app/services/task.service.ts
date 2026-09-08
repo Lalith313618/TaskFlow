@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { getBackendUrl } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TaskService {
 
-  private host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
-  private apiUrl = `http://${this.host}:5000/api/tasks`;
-  private adminUrl = `http://${this.host}:5000/api/admin`;
+  private apiUrl = `${getBackendUrl()}/api/tasks`;
+  private adminUrl = `${getBackendUrl()}/api/admin`;
 
   constructor(private http: HttpClient) {}
 
