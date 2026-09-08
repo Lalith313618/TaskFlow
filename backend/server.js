@@ -24,10 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static uploaded files & images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use((req, res, next) => {
-  console.log(`[API REQUEST] ${req.method} ${req.originalUrl}`);
-  next();
-});
 
 app.use("/api/auth", authRoutes);
 app.use('/api/tasks', taskRoutes);
