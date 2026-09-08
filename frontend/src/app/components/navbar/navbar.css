@@ -363,3 +363,39 @@
     font-size: 12px;
   }
 }
+
+.notif-backdrop {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .notif-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 9998;
+    backdrop-filter: blur(1px);
+    animation: fadeInBackdrop 0.2s ease-out;
+  }
+
+  .notif-dropdown {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: calc(100vw - 24px);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.12);
+    z-index: 9999;
+  }
+}
+
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

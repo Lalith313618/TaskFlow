@@ -43,6 +43,7 @@
           </button>
 
           @if (showNotifications) {
+            <div class="notif-backdrop" (click)="showNotifications = false"></div>
             <div class="notif-dropdown">
               <div class="notif-header">
                 <div class="notif-header-title">
