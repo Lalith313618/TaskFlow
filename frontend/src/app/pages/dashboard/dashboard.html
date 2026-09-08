@@ -140,6 +140,9 @@
                   @if (task.assignedTo) {
                     <span>🎓 Assigned to: <strong>{{ task.assignedTo.name }}</strong> ({{ task.assignedTo.email }})</span>
                   }
+                  @if (task.createdAt) {
+                    <span class="recent-assigned">🕒 Assigned: {{ task.createdAt | date:'mediumDate' }} at {{ task.createdAt | date:'shortTime' }}</span>
+                  }
                   @if (task.dueDate) {
                     <span class="recent-due">📅 Due: {{ task.dueDate | date:'mediumDate' }}</span>
                   }

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -18,6 +19,8 @@ export interface AppNotification {
 })
 export class SocketService {
   private socket: Socket | null = null;
+  private currentUserId: string | null = null;
+  private apiUrl: string;
 
   private messageSubject = new Subject<any>();
   private statusSubject = new Subject<any>();
@@ -31,9 +34,19 @@ export class SocketService {
   public notifications$ = this.notificationsSubject.asObservable();
   public unreadCount$ = this.unreadCountSubject.asObservable();
 
-  constructor(private authService: AuthService) {
-    this.loadPersistedNotifications();
+  constructor(
+    private authService: AuthService,
+    private http: HttpClient
+  ) {
+    const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
+    this.apiUrl = `http://${host}:5000/api/notifications`;
+
     this.initSocket();
+
+    this.authService.currentUser$.subscribe(user => {
+      const newUserId = user ? (user.id || user._id)?.toString() : null;
+      this.handleUserChange(newUserId);
+    });
   }
 
   public initSocket(): void {
@@ -51,18 +64,27 @@ export class SocketService {
     });
 
     this.socket.on('connect', () => {
-      this.rejoinUserRoom();
+      if (this.currentUserId) {
+        this.socket?.emit('join_user', this.currentUserId);
+      }
     });
 
-    // Listen to personal notification events
     this.socket.on('notification', (payload: any) => {
+      if (!this.currentUserId) return;
+
+      const notifId = payload.id || payload._id || ('notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+
+      if (this.notificationsList.some(n => n.id === notifId)) {
+        return;
+      }
+
       const notif: AppNotification = {
-        id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        id: notifId,
         type: payload.type || 'general',
         title: payload.title || 'TaskFlow Alert',
         message: payload.message || '',
         taskId: payload.taskId,
-        read: false,
+        read: payload.read || false,
         createdAt: payload.createdAt || new Date().toISOString()
       };
 
@@ -70,7 +92,6 @@ export class SocketService {
       this.notificationSubject.next(notif);
     });
 
-    // Listen to task room specific events
     this.socket.on('new_message', (data: any) => {
       this.messageSubject.next(data);
     });
@@ -84,12 +105,69 @@ export class SocketService {
     });
   }
 
+  private handleUserChange(newUserId: string | null): void {
+    if (this.currentUserId && this.currentUserId !== newUserId) {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('leave_user', this.currentUserId);
+      }
+    }
+
+    this.currentUserId = newUserId;
+
+    if (!newUserId) {
+      
+      this.notificationsList = [];
+      this.notificationsSubject.next([]);
+      this.unreadCountSubject.next(0);
+    } else {
+      
+      this.loadPersistedNotifications();
+      this.fetchNotificationsFromApi();
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('join_user', newUserId);
+      }
+    }
+  }
+
   public rejoinUserRoom(): void {
     const user = this.authService.getUser();
-    const userId = user?.id || user?._id;
-    if (this.socket && userId) {
-      this.socket.emit('join_user', userId.toString());
-    }
+    const userId = user ? (user.id || user._id)?.toString() : null;
+    this.handleUserChange(userId);
+  }
+
+  public onLogout(): void {
+    this.handleUserChange(null);
+  }
+
+  public fetchNotificationsFromApi(): void {
+    if (!this.currentUserId || !this.authService.getToken()) return;
+
+    this.http.get<any>(this.apiUrl).subscribe({
+      next: (res) => {
+        if (res && res.success && Array.isArray(res.data)) {
+          this.notificationsList = res.data.map((item: any) => ({
+            id: (item._id || item.id).toString(),
+            type: item.type || 'general',
+            title: item.title || 'TaskFlow Alert',
+            message: item.message || '',
+            taskId: item.taskId ? (item.taskId._id || item.taskId).toString() : undefined,
+            read: !!item.read,
+            createdAt: item.createdAt || new Date().toISOString()
+          }));
+
+          const unread = typeof res.unreadCount === 'number'
+            ? res.unreadCount
+            : this.notificationsList.filter(n => !n.read).length;
+
+          this.notificationsSubject.next([...this.notificationsList]);
+          this.unreadCountSubject.next(unread);
+          this.persistNotifications();
+        }
+      },
+      error: (err) => {
+        console.warn('Could not fetch notifications from backend API:', err?.message || err);
+      }
+    });
   }
 
   public joinTask(taskId: string): void {
@@ -104,7 +182,6 @@ export class SocketService {
     }
   }
 
-  // Observable accessors
   public onNewMessage(): Observable<any> {
     return this.messageSubject.asObservable();
   }
@@ -121,12 +198,11 @@ export class SocketService {
     return this.notificationSubject.asObservable();
   }
 
-  // Notification management
   private addNotification(notif: AppNotification): void {
     this.notificationsList.unshift(notif);
-    // Keep last 30 notifications
-    if (this.notificationsList.length > 30) {
-      this.notificationsList = this.notificationsList.slice(0, 30);
+
+    if (this.notificationsList.length > 40) {
+      this.notificationsList = this.notificationsList.slice(0, 40);
     }
     this.updateNotificationState();
   }
@@ -137,16 +213,37 @@ export class SocketService {
       item.read = true;
       this.updateNotificationState();
     }
+
+    if (this.currentUserId && this.authService.getToken()) {
+      this.http.put(`${this.apiUrl}/${id}/read`, {}).subscribe({
+        error: (err) => console.warn('Could not mark notification as read on server:', err)
+      });
+    }
   }
 
   public markAllAsRead(): void {
     this.notificationsList.forEach(n => n.read = true);
     this.updateNotificationState();
+
+    if (this.currentUserId && this.authService.getToken()) {
+      this.http.put(`${this.apiUrl}/mark-all-read`, {}).subscribe({
+        error: (err) => console.warn('Could not mark all notifications as read on server:', err)
+      });
+    }
   }
 
   public clearAll(): void {
     this.notificationsList = [];
     this.updateNotificationState();
+    if (typeof window !== 'undefined' && window.localStorage && this.currentUserId) {
+      localStorage.removeItem(this.getStorageKey());
+    }
+
+    if (this.currentUserId && this.authService.getToken()) {
+      this.http.delete(this.apiUrl).subscribe({
+        error: (err) => console.warn('Could not clear notifications on server:', err)
+      });
+    }
   }
 
   private updateNotificationState(): void {
@@ -156,10 +253,14 @@ export class SocketService {
     this.persistNotifications();
   }
 
+  private getStorageKey(): string {
+    return this.currentUserId ? `tf_notifications_${this.currentUserId}` : 'tf_notifications_guest';
+  }
+
   private persistNotifications(): void {
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== 'undefined' && window.localStorage && this.currentUserId) {
       try {
-        localStorage.setItem('tf_notifications', JSON.stringify(this.notificationsList));
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.notificationsList));
       } catch (e) {
         console.warn('Could not persist notifications', e);
       }
@@ -169,15 +270,31 @@ export class SocketService {
   private loadPersistedNotifications(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
-        const raw = localStorage.getItem('tf_notifications');
+
+        if (localStorage.getItem('tf_notifications')) {
+          localStorage.removeItem('tf_notifications');
+        }
+
+        if (!this.currentUserId) {
+          this.notificationsList = [];
+          this.notificationsSubject.next([]);
+          this.unreadCountSubject.next(0);
+          return;
+        }
+
+        const raw = localStorage.getItem(this.getStorageKey());
         if (raw) {
           this.notificationsList = JSON.parse(raw);
-          this.notificationsSubject.next([...this.notificationsList]);
-          const unread = this.notificationsList.filter(n => !n.read).length;
-          this.unreadCountSubject.next(unread);
+        } else {
+          this.notificationsList = [];
         }
+        this.notificationsSubject.next([...this.notificationsList]);
+        const unread = this.notificationsList.filter(n => !n.read).length;
+        this.unreadCountSubject.next(unread);
       } catch (e) {
         this.notificationsList = [];
+        this.notificationsSubject.next([]);
+        this.unreadCountSubject.next(0);
       }
     }
   }

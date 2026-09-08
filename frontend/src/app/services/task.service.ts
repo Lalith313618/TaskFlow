@@ -53,7 +53,6 @@ export class TaskService {
     return this.http.get(`${this.apiUrl}/stats`);
   }
 
-  // Communication / Responses
   getResponses(taskId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/${taskId}/responses`);
   }
@@ -62,12 +61,10 @@ export class TaskService {
     return this.http.post(`${this.apiUrl}/${taskId}/responses`, { message });
   }
 
-  // Work Submission & Completion Proof
   submitWork(taskId: string, formData: FormData): Observable<any> {
     return this.http.post(`${this.apiUrl}/${taskId}/submission`, formData);
   }
 
-  // Admin / Intern Directory (Manager only)
   getInterns(): Observable<any> {
     return this.http.get(`${this.adminUrl}/interns`);
   }

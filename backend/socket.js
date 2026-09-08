@@ -14,7 +14,20 @@ function initSocket(server) {
     // Client joins their user-specific notification room
     socket.on('join_user', (userId) => {
       if (userId) {
+        // Leave any previous user notification rooms to prevent cross-account leaks
+        for (const room of socket.rooms) {
+          if (typeof room === 'string' && room.startsWith('user_') && room !== `user_${userId}`) {
+            socket.leave(room);
+          }
+        }
         socket.join(`user_${userId}`);
+      }
+    });
+
+    // Client leaves user notification room (e.g. on logout)
+    socket.on('leave_user', (userId) => {
+      if (userId) {
+        socket.leave(`user_${userId}`);
       }
     });
 

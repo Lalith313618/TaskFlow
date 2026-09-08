@@ -41,7 +41,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   }
 
-  // Manager Access Code Validation (Validated on backend only)
   if (role === "manager") {
     const expectedCode = (process.env.MANAGER_ACCESS_CODE || "").trim();
     if (!managerAccessCode || managerAccessCode.trim() !== expectedCode) {

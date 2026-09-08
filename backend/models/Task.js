@@ -43,25 +43,28 @@ title: {
     ref: "User"
   },
   submission: {
-    description: {
-      type: String,
-      trim: true
-    },
-    attachments: [
-      {
-        fileName: { type: String },
-        fileUrl: { type: String },
-        fileType: { type: String },
-        fileSize: { type: Number }
+    type: {
+      description: {
+        type: String,
+        trim: true
+      },
+      attachments: [
+        {
+          fileName: { type: String },
+          fileUrl: { type: String },
+          fileType: { type: String },
+          fileSize: { type: Number }
+        }
+      ],
+      submittedAt: {
+        type: Date
+      },
+      submittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
       }
-    ],
-    submittedAt: {
-      type: Date
     },
-    submittedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
-    }
+    default: null
   }
 }, {
   timestamps: true

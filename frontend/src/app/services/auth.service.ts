@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -8,8 +8,10 @@ import { Observable } from 'rxjs';
 export class AuthService {
 
   private apiUrl = `http://${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost'}:5000/api/auth`;
+  private currentUserSubject = new BehaviorSubject<any>(this.getUser());
+  public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   register(data: {
     name: string;
@@ -46,7 +48,6 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/change-password`, data);
   }
 
-  // Session & Role Helpers
   saveSession(token: string, user: any): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('token', token);
@@ -57,6 +58,7 @@ export class AuthService {
         }
       }
     }
+    this.currentUserSubject.next(user);
   }
 
   getToken(): string | null {
@@ -102,5 +104,6 @@ export class AuthService {
       localStorage.removeItem('user');
       localStorage.removeItem('role');
     }
+    this.currentUserSubject.next(null);
   }
 }

@@ -99,6 +99,9 @@
               @if (!isManager && task.assignedBy) {
                 <span>👑 <strong>Manager:</strong> {{ task.assignedBy.name }}</span>
               }
+              @if (task.createdAt) {
+                <span>🕒 <strong>Assigned:</strong> {{ task.createdAt | date:'mediumDate' }} at {{ task.createdAt | date:'shortTime' }}</span>
+              }
               @if (task.dueDate) {
                 <span>📅 <strong>Due:</strong> {{ task.dueDate | date:'mediumDate' }}</span>
               }

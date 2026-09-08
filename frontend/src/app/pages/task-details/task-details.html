@@ -58,7 +58,7 @@
             <div class="meta-grid">
               <div class="meta-item">
                 <span class="meta-label">📅 Due Date</span>
-                <strong class="meta-value">{{ task.dueDate ? (task.dueDate | date:'mediumDate') : 'No deadline' }}</strong>
+                <strong class="meta-value">{{ formatDueDate(task.dueDate) }}</strong>
               </div>
 
               <div class="meta-item">
@@ -78,8 +78,8 @@
               </div>
 
               <div class="meta-item">
-                <span class="meta-label">🕒 Created On</span>
-                <strong class="meta-value">{{ task.createdAt | date:'mediumDate' }}</strong>
+                <span class="meta-label">🕒 Assigned On (Date & Time)</span>
+                <strong class="meta-value">{{ task.createdAt | date:'mediumDate' }} at {{ task.createdAt | date:'shortTime' }}</strong>
               </div>
             </div>
 
@@ -94,9 +94,9 @@
                 <p class="subtitle">Proof of work, completion notes, screenshots, and attached files.</p>
               </div>
 
-              @if (task.submission?.submittedAt) {
+              @if (isWorkSubmitted && task.submission?.submittedAt) {
                 <span class="submitted-badge">
-                  ✓ Submitted {{ task.submission.submittedAt | date:'mediumDate' }}
+                  ✓ Submitted {{ task.submission.submittedAt | date:'mediumDate' }} at {{ task.submission.submittedAt | date:'shortTime' }}
                 </span>
               }
             </div>
@@ -111,11 +111,13 @@
 
             <!-- 1. MANAGER VIEW -->
             @if (isManager) {
-              @if (task.submission && (task.submission.description || (task.submission.attachments && task.submission.attachments.length > 0))) {
+              @if (isWorkSubmitted) {
                 <div class="submission-content-view">
                   <div class="submission-meta-strip">
-                    <span>🎓 Submitted by <strong>{{ task.submission.submittedBy?.name || task.assignedTo?.name }}</strong></span>
-                    <span>🕒 {{ task.submission.submittedAt | date:'medium' }}</span>
+                    <span>🎓 Submitted by <strong>{{ task.submission?.submittedBy?.name || task.assignedTo?.name }}</strong></span>
+                    @if (task.submission?.submittedAt) {
+                      <span>🕒 {{ task.submission.submittedAt | date:'mediumDate' }} at {{ task.submission.submittedAt | date:'shortTime' }}</span>
+                    }
                   </div>
 
                   @if (task.submission.description) {
@@ -169,11 +171,13 @@
             @if (!isManager) {
 
               <!-- Already Submitted View -->
-              @if (task.submission && !isEditingSubmission) {
+              @if (isWorkSubmitted && !isEditingSubmission) {
                 <div class="submission-content-view">
                   <div class="submission-meta-strip">
                     <span>✅ <strong>Your work has been submitted</strong></span>
-                    <span>🕒 {{ task.submission.submittedAt | date:'medium' }}</span>
+                    @if (task.submission?.submittedAt) {
+                      <span>🕒 {{ task.submission.submittedAt | date:'mediumDate' }} at {{ task.submission.submittedAt | date:'shortTime' }}</span>
+                    }
                   </div>
 
                   @if (task.submission.description) {
@@ -221,7 +225,7 @@
               }
 
               <!-- Submission Form (Not submitted yet OR in edit mode) -->
-              @if (!task.submission || isEditingSubmission) {
+              @if (!isWorkSubmitted || isEditingSubmission) {
                 <div class="submission-form">
 
                   <div class="form-group">

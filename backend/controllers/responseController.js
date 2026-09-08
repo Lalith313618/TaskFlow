@@ -2,9 +2,6 @@ const TaskResponse = require("../models/TaskResponse");
 const Task = require("../models/Task");
 const asyncHandler = require("../middleware/asyncHandler");
 
-// @desc    Add a message/response to a task thread
-// @route   POST /api/tasks/:id/responses
-// @access  Private (Assigned intern or manager)
 const addResponse = asyncHandler(async (req, res) => {
   const { message } = req.body;
   const taskId = req.params.id;
@@ -25,7 +22,6 @@ const addResponse = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify permission: User must be either the assigned intern, the assigning manager, or the owner
   const isAssignedIntern = task.assignedTo && task.assignedTo.toString() === userId.toString();
   const isAssigningManager = task.assignedBy && task.assignedBy.toString() === userId.toString();
   const isLegacyUser = task.user && task.user.toString() === userId.toString();
@@ -45,23 +41,25 @@ const addResponse = asyncHandler(async (req, res) => {
 
   const populatedResponse = await TaskResponse.findById(responseDoc._id).populate("sender", "name email role");
 
-  const { emitToTask, emitToUser } = require('../socket');
-  // Broadcast message immediately to everyone in the task room
+  const { emitToTask } = require('../socket');
+  const { sendNotification } = require('./notificationController');
+
   emitToTask(taskId.toString(), 'new_message', {
     taskId: taskId.toString(),
     response: populatedResponse
   });
 
-  // Notify the other user (manager if sent by intern, intern if sent by manager)
+
   const isSenderIntern = isAssignedIntern || isLegacyUser;
   const targetRecipientId = isSenderIntern ? task.assignedBy : task.assignedTo;
   if (targetRecipientId) {
-    emitToUser(targetRecipientId.toString(), 'notification', {
+    await sendNotification({
+      recipient: targetRecipientId,
+      sender: req.user.userId,
       type: 'task_message',
       title: 'New Discussion Message',
       message: `${populatedResponse.sender?.name || 'User'} on "${task.title}": "${message.trim().substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
-      taskId: taskId.toString(),
-      createdAt: new Date().toISOString()
+      taskId: taskId
     });
   }
 
@@ -72,9 +70,7 @@ const addResponse = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all messages/responses for a task
-// @route   GET /api/tasks/:id/responses
-// @access  Private (Assigned intern or manager)
+
 const getResponses = asyncHandler(async (req, res) => {
   const taskId = req.params.id;
   const userId = req.user.userId;

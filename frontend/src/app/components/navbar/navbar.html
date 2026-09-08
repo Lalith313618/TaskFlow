@@ -19,9 +19,6 @@
         <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
           {{ isManager ? 'Assigned Tasks' : 'My Tasks' }}
         </a>
-        <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
-          📅 Calendar
-        </a>
 
         @if (isManager) {
           <a routerLink="/interns" routerLinkActive="active" class="nav-link">
@@ -37,7 +34,6 @@
       </nav>
 
       <div class="navbar-right">
-        <!-- Real-Time Notification Bell -->
         <div class="notif-wrapper">
           <button (click)="toggleNotifications($event)" class="notif-btn" aria-label="Notifications" title="Real-Time Alerts">
             🔔

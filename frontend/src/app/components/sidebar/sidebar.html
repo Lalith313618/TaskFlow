@@ -21,10 +21,6 @@
       <span>{{ isManager ? 'Assigned Tasks' : 'My Tasks' }}</span>
     </a>
 
-    <a routerLink="/calendar" routerLinkActive="active" (click)="onClose()" class="sidebar-link">
-      <span class="link-icon">📅</span>
-      <span>Calendar</span>
-    </a>
 
     @if (isManager) {
     <a routerLink="/interns" routerLinkActive="active" (click)="onClose()" class="sidebar-link">

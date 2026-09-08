@@ -2,13 +2,9 @@ const User = require("../models/User");
 const Task = require("../models/Task");
 const asyncHandler = require("../middleware/asyncHandler");
 
-// @desc    Get all interns with task stats
-// @route   GET /api/admin/interns
-// @access  Private (Manager only)
 const getAllInterns = asyncHandler(async (req, res) => {
   const interns = await User.find({ role: { $ne: "manager" } }).select("-password").sort({ name: 1 });
 
-  // Enrich with task counts
   const internsWithStats = await Promise.all(
     interns.map(async (intern) => {
       const [totalTasks, pendingTasks, completedTasks] = await Promise.all([
@@ -35,9 +31,6 @@ const getAllInterns = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get single intern details and their assigned tasks
-// @route   GET /api/admin/interns/:id
-// @access  Private (Manager only)
 const getInternById = asyncHandler(async (req, res) => {
   const intern = await User.findOne({ _id: req.params.id, role: { $ne: "manager" } }).select("-password");
 
@@ -61,9 +54,6 @@ const getInternById = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Test real-time email dispatch
-// @route   POST /api/admin/test-email
-// @access  Private (Manager only)
 const testEmail = asyncHandler(async (req, res) => {
   const { testEmail: targetEmail } = req.body;
   const destination = targetEmail || req.user.email;
@@ -103,9 +93,6 @@ const testEmail = asyncHandler(async (req, res) => {
 
 const bcrypt = require("bcryptjs");
 
-// @desc    Register a new intern (Manager only)
-// @route   POST /api/admin/interns
-// @access  Private (Manager only)
 const createIntern = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -154,9 +141,6 @@ const createIntern = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update an intern's details (Manager only)
-// @route   PUT /api/admin/interns/:id
-// @access  Private (Manager only)
 const updateIntern = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -211,9 +195,6 @@ const updateIntern = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete an intern (Manager only)
-// @route   DELETE /api/admin/interns/:id
-// @access  Private (Manager only)
 const deleteIntern = asyncHandler(async (req, res) => {
   const intern = await User.findOneAndDelete({ _id: req.params.id, role: { $ne: "manager" } });
 
@@ -223,8 +204,6 @@ const deleteIntern = asyncHandler(async (req, res) => {
       message: "Intern not found"
     });
   }
-
-  // Also clean up tasks previously assigned to this intern
   await Task.deleteMany({ assignedTo: intern._id });
 
   res.status(200).json({

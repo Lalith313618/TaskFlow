@@ -119,7 +119,11 @@ export class CreateTask implements OnInit {
           this.status = task.status || 'pending';
           this.priority = task.priority || 'medium';
           if (task.dueDate) {
-            this.dueDate = new Date(task.dueDate).toISOString().split('T')[0];
+            const d = new Date(task.dueDate);
+            if (!isNaN(d.getTime())) {
+              const pad = (n: number) => n.toString().padStart(2, '0');
+              this.dueDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
           }
           if (task.assignedTo) {
             this.assignedTo = task.assignedTo._id || task.assignedTo;
@@ -159,7 +163,7 @@ export class CreateTask implements OnInit {
       description: this.description.trim(),
       status: this.status,
       priority: this.priority,
-      ...(this.dueDate ? { dueDate: this.dueDate } : {})
+      ...(this.dueDate ? { dueDate: new Date(this.dueDate).toISOString() } : {})
     };
 
     if (this.internEmail.trim()) {

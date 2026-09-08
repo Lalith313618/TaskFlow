@@ -3,10 +3,9 @@ const User = require('../models/User');
 const asyncHandler = require("../middleware/asyncHandler");
 const { sendTaskAssignedEmail } = require("../utils/emailService");
 const { emitToUser, emitToTask, emitToAll } = require('../socket');
+const { sendNotification } = require('./notificationController');
 
-// @desc    Create and assign a task to an intern
-// @route   POST /api/tasks
-// @access  Private (Manager only)
+
 const createTask = asyncHandler(async (req, res) => {
   const { title, description, priority, dueDate, internEmail, assignedTo } = req.body;
 
@@ -36,7 +35,7 @@ const createTask = asyncHandler(async (req, res) => {
       });
     }
   } else {
-    // If no intern specified, check if creator is manager or self-assigning
+
     if (req.user.role === "manager") {
       return res.status(400).json({
         success: false,
@@ -57,14 +56,13 @@ const createTask = asyncHandler(async (req, res) => {
     dueDate: dueDate || null,
     assignedTo: internUser._id,
     assignedBy: req.user.userId,
-    user: internUser._id // Maintain backward compatibility
+    user: internUser._id
   });
 
   const populatedTask = await Task.findById(task._id)
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email");
 
-  // Send assignment notification email asynchronously
   sendTaskAssignedEmail({
     toEmail: internUser.email,
     internName: internUser.name,
@@ -75,15 +73,14 @@ const createTask = asyncHandler(async (req, res) => {
     managerName: managerUser ? managerUser.name : "Manager"
   }).catch((err) => console.error("Email notification dispatch error:", err.message));
 
-  // Real-time socket notification to assigned intern
   if (internUser) {
-    emitToUser(internUser._id.toString(), 'notification', {
+    await sendNotification({
+      recipient: internUser._id,
+      sender: req.user.userId,
       type: 'task_assigned',
       title: 'New Task Assigned',
       message: `${managerUser ? managerUser.name : 'Manager'} assigned you a new task: "${task.title}"`,
-      taskId: task._id.toString(),
-      priority: task.priority,
-      createdAt: new Date().toISOString()
+      taskId: task._id
     });
   }
   emitToAll('task_created', { taskId: task._id.toString() });
@@ -95,9 +92,7 @@ const createTask = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get tasks according to user role
-// @route   GET /api/tasks
-// @access  Private
+
 const getTasks = asyncHandler(async (req, res) => {
   const {
     status,
@@ -112,13 +107,11 @@ const getTasks = asyncHandler(async (req, res) => {
   const filter = {};
 
   if (req.user.role === "manager") {
-    // Only show tasks created/assigned by this manager
     filter.assignedBy = req.user.userId;
     if (internId) {
       filter.assignedTo = internId;
     }
   } else {
-    // Intern only sees tasks assigned to them
     filter.$or = [
       { assignedTo: req.user.userId },
       { user: req.user.userId }
@@ -163,9 +156,7 @@ const getTasks = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get single task by ID
-// @route   GET /api/tasks/:id
-// @access  Private
+
 const getTaskById = asyncHandler(async (req, res) => {
   const task = await Task.findById(req.params.id)
     .populate("assignedTo", "name email")
@@ -179,7 +170,6 @@ const getTaskById = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify access permission
   const userId = req.user.userId.toString();
   const isAssignedIntern = task.assignedTo && task.assignedTo._id.toString() === userId;
   const isAssigningManager = task.assignedBy && task.assignedBy._id.toString() === userId;
@@ -198,9 +188,6 @@ const getTaskById = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update task details (Manager) or full task
-// @route   PUT /api/tasks/:id
-// @access  Private
 const updateTask = asyncHandler(async (req, res) => {
   const task = await Task.findById(req.params.id);
 
@@ -222,14 +209,13 @@ const updateTask = asyncHandler(async (req, res) => {
     });
   }
 
-  // If intern, only allow updating status
   if (!isManager && isAssignedIntern) {
     if (req.body.status) {
       task.status = req.body.status;
       await task.save();
     }
   } else {
-    // Manager can update fields
+
     if (req.body.title !== undefined) task.title = req.body.title;
     if (req.body.description !== undefined) task.description = req.body.description;
     if (req.body.priority !== undefined) task.priority = req.body.priority;
@@ -261,9 +247,6 @@ const updateTask = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Update task status (Intern / Manager)
-// @route   PATCH /api/tasks/:id/status
-// @access  Private
 const updateTaskStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
 
@@ -302,7 +285,6 @@ const updateTaskStatus = asyncHandler(async (req, res) => {
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email");
 
-  // Real-time socket status emission
   emitToTask(task._id.toString(), 'task_status_changed', {
     taskId: task._id.toString(),
     status: status,
@@ -311,13 +293,13 @@ const updateTaskStatus = asyncHandler(async (req, res) => {
 
   const otherPartyId = isAssignedIntern ? task.assignedBy : task.assignedTo;
   if (otherPartyId) {
-    emitToUser(otherPartyId.toString(), 'notification', {
+    await sendNotification({
+      recipient: otherPartyId,
+      sender: req.user.userId,
       type: 'status_updated',
       title: 'Task Status Updated',
       message: `"${task.title}" status changed to ${status.toUpperCase()}`,
-      taskId: task._id.toString(),
-      status: status,
-      createdAt: new Date().toISOString()
+      taskId: task._id
     });
   }
 
@@ -328,9 +310,6 @@ const updateTaskStatus = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get task statistics for dashboard
-// @route   GET /api/tasks/stats
-// @access  Private
 const getTaskStats = asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const isManager = req.user.role === "manager";
@@ -380,13 +359,9 @@ const getTaskStats = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete a task (Manager only)
-// @route   DELETE /api/tasks/:id
-// @access  Private (Manager)
 const deleteTask = asyncHandler(async (req, res) => {
   const filter = { _id: req.params.id };
 
-  // If manager, check if they assigned it or allow manager role
   if (req.user.role !== "manager") {
     return res.status(403).json({
       success: false,
@@ -410,9 +385,6 @@ const deleteTask = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Submit task work & completion proof with attachments
-// @route   POST /api/tasks/:id/submission
-// @access  Private (Assigned intern)
 const submitTaskWork = asyncHandler(async (req, res) => {
   const taskId = req.params.id;
   const userId = req.user.userId.toString();
@@ -426,7 +398,6 @@ const submitTaskWork = asyncHandler(async (req, res) => {
     });
   }
 
-  // Permission check: assigned intern, legacy task owner, or manager
   const isAssignedIntern = task.assignedTo && task.assignedTo.toString() === userId;
   const isLegacyUser = task.user && task.user.toString() === userId;
 
@@ -437,7 +408,6 @@ const submitTaskWork = asyncHandler(async (req, res) => {
     });
   }
 
-  // Process uploaded files if any
   const attachments = [];
   if (req.files && Array.isArray(req.files)) {
     req.files.forEach(file => {
@@ -457,11 +427,9 @@ const submitTaskWork = asyncHandler(async (req, res) => {
     submittedBy: req.user.userId
   };
 
-  // Automatically mark task status as completed upon work submission
   task.status = 'completed';
   await task.save();
 
-  // Also log into TaskResponse communication thread for audit trail
   const TaskResponse = require("../models/TaskResponse");
   const attachmentText = attachments.length > 0
     ? ` with ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}`
@@ -480,7 +448,6 @@ const submitTaskWork = asyncHandler(async (req, res) => {
     .populate("assignedBy", "name email")
     .populate("submission.submittedBy", "name email role");
 
-  // Real-time socket work submission emission
   emitToTask(taskId.toString(), 'work_submitted', {
     taskId: taskId.toString(),
     task: updatedTask
@@ -488,12 +455,13 @@ const submitTaskWork = asyncHandler(async (req, res) => {
 
   if (task.assignedBy) {
     const intern = await User.findById(req.user.userId);
-    emitToUser(task.assignedBy.toString(), 'notification', {
+    await sendNotification({
+      recipient: task.assignedBy,
+      sender: req.user.userId,
       type: 'work_submitted',
       title: 'Work Proof Submitted',
       message: `${intern ? intern.name : 'Intern'} submitted work completion proof for "${task.title}"`,
-      taskId: taskId.toString(),
-      createdAt: new Date().toISOString()
+      taskId: taskId
     });
   }
 

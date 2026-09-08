@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { initSocket } = require('./socket');
 
@@ -31,6 +32,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
   res.json({

@@ -42,6 +42,28 @@ export class TaskDetails implements OnInit, OnDestroy {
   // Image Lightbox Modal
   previewModalImage: string | null = null;
 
+  get isWorkSubmitted(): boolean {
+    if (!this.task || !this.task.submission) return false;
+    const sub = this.task.submission;
+    return Boolean(
+      sub.submittedAt ||
+      (sub.description && sub.description.trim().length > 0) ||
+      (sub.attachments && sub.attachments.length > 0)
+    );
+  }
+
+  formatDueDate(dueDateStr: string | Date | undefined): string {
+    if (!dueDateStr) return 'No deadline';
+    const d = new Date(dueDateStr);
+    if (isNaN(d.getTime())) return 'No deadline';
+    const hasTime = d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0;
+    if (hasTime) {
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) +
+        ' at ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   private socketSubs: Subscription[] = [];
 
   constructor(
