@@ -85,7 +85,6 @@
 
           </div>
 
-          <!-- Dedicated Work Submission & Completion Proof Card -->
           <div class="work-submission-card">
 
             <div class="submission-card-header">
@@ -101,7 +100,6 @@
               }
             </div>
 
-            <!-- Submission Alerts -->
             @if (submissionSuccess) {
               <div class="alert alert-success">{{ submissionSuccess }}</div>
             }
@@ -109,7 +107,6 @@
               <div class="alert alert-error">{{ submissionError }}</div>
             }
 
-            <!-- 1. MANAGER VIEW -->
             @if (isManager) {
               @if (isWorkSubmitted) {
                 <div class="submission-content-view">
@@ -131,7 +128,6 @@
                     <div class="attachments-section">
                       <h4>Attached Files & Proof ({{ task.submission.attachments.length }}):</h4>
 
-                      <!-- Images Gallery -->
                       <div class="attachments-grid">
                         @for (att of task.submission.attachments; track att.fileUrl) {
                           <div class="attachment-item">
@@ -167,11 +163,9 @@
               }
             }
 
-            <!-- 2. INTERN VIEW -->
             @if (!isManager) {
 
-              <!-- Already Submitted View -->
-              @if (isWorkSubmitted && !isEditingSubmission) {
+                @if (isWorkSubmitted && !isEditingSubmission) {
                 <div class="submission-content-view">
                   <div class="submission-meta-strip">
                     <span>✅ <strong>Your work has been submitted</strong></span>
@@ -224,7 +218,6 @@
                 </div>
               }
 
-              <!-- Submission Form (Not submitted yet OR in edit mode) -->
               @if (!isWorkSubmitted || isEditingSubmission) {
                 <div class="submission-form">
 
@@ -239,7 +232,6 @@
                     ></textarea>
                   </div>
 
-                  <!-- File / Image Upload Box -->
                   <div class="form-group">
                     <label>Attachments & Proof of Work (Images, PDFs, Documents, ZIPs)</label>
 
@@ -260,7 +252,6 @@
                     </div>
                   </div>
 
-                  <!-- Staged Files Preview List -->
                   @if (selectedFilePreviews.length > 0) {
                     <div class="staged-files-list">
                       <h4>Selected Files ({{ selectedFilePreviews.length }}):</h4>
@@ -309,14 +300,11 @@
 
                 </div>
               }
-
             }
-
           </div>
 
         </div>
 
-        <!-- Right Column: Task Conversation / Response Thread -->
         <div class="task-discussion-card">
 
           <div class="discussion-header">
@@ -324,7 +312,6 @@
             <p>Exchange feedback, progress updates, and questions regarding this assignment.</p>
           </div>
 
-          <!-- Messages Container -->
           <div class="messages-container">
             @if (responses.length === 0) {
               <div class="empty-messages">
@@ -347,7 +334,6 @@
             }
           </div>
 
-          <!-- Message Input Bar -->
           <form (ngSubmit)="sendResponse()" class="message-input-form">
             <textarea
               [(ngModel)]="newMessage"
@@ -367,7 +353,6 @@
       </div>
     }
 
-    <!-- Image Lightbox Modal -->
     @if (previewModalImage) {
       <div class="image-modal-backdrop" (click)="closeImageModal()">
         <div class="image-modal-content" (click)="$event.stopPropagation()">
