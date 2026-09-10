@@ -2,25 +2,41 @@ const nodemailer = require("nodemailer");
 
 const createTransporter = () => {
   const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+  const rawPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
 
-  if (!user || !pass) {
+  if (!user || !rawPass) {
     return null;
   }
+
+  // Strip any spaces in case Gmail App Password was pasted with spaces ("xxxx xxxx xxxx xxxx")
+  const pass = rawPass.replace(/\s+/g, "");
 
   if (process.env.SMTP_HOST) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_PORT === "465",
-      auth: { user, pass }
+      auth: { user, pass },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000
     });
   }
 
-  // Gmail SMTP with direct SSL/TLS prevents ECONNRESET on idle connections
+  // In cloud environments (Render, Railway, AWS, DigitalOcean), port 587 / STARTTLS is often
+  // blocked or filtered by egress firewalls. Using smtp.gmail.com on port 465 with direct SSL
+  // is universally supported and prevents ETIMEDOUT / ECONNRESET errors.
   return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass }
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000
   });
 };
 
@@ -58,6 +74,8 @@ const sendTaskAssignedEmail = async ({
   const priorityColor =
     priority === "high" ? "#dc2626" : priority === "low" ? "#16a34a" : "#ea580c";
 
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
+
   // Anti-spam subject: Professional, specific, no caps-lock spam words
   const emailSubject = `[TaskFlow] New Task Assigned: ${taskTitle}`;
 
@@ -73,7 +91,7 @@ TASK DETAILS:
 ${taskDescription ? `- Instructions: ${taskDescription}\n` : ""}
 
 Please log in to your dashboard to review task details, submit updates, and communicate with your manager:
-http://localhost:4200/tasks
+${frontendUrl}/tasks
 
 Best regards,
 TaskFlow Management Team
@@ -150,7 +168,7 @@ TaskFlow Management Team
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
                   <td align="center">
-                    <a href="http://localhost:4200/tasks" target="_blank" style="display: inline-block; background-color: #0f766e; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 6px; box-shadow: 0 2px 4px rgba(15, 118, 110, 0.25);">
+                    <a href="${frontendUrl}/tasks" target="_blank" style="display: inline-block; background-color: #0f766e; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 6px; box-shadow: 0 2px 4px rgba(15, 118, 110, 0.25);">
                       View Task &amp; Open Discussion
                     </a>
                   </td>
@@ -183,17 +201,20 @@ TaskFlow Management Team
 </html>
 `;
 
-  // Fallback to mock log if credentials are not configured in backend/.env
+  // Fallback if credentials are not configured in environment
   if (!transporter || !user) {
-    console.log("==================================================");
-    console.log("📧 [MOCK EMAIL SERVICE - SETUP NEEDED]");
-    console.log(`To: ${toEmail} (${internName})`);
-    console.log(`From: ${managerName || "Manager"}`);
-    console.log(`Subject: ${emailSubject}`);
-    console.log("⚡ To receive REAL emails directly in your inbox:");
-    console.log("   Add EMAIL_USER & EMAIL_PASS (Gmail 16-char App Password) in backend/.env");
-    console.log("==================================================");
-    return { success: true, simulated: true };
+    console.warn("==================================================");
+    console.warn("⚠️ [EMAIL NOT SENT - CONFIGURATION NEEDED]");
+    console.warn(`Attempted to send email to: ${toEmail} (${internName})`);
+    console.warn("Reason: EMAIL_USER and/or EMAIL_PASS (or EMAIL_PASSWORD) are not set.");
+    console.warn("👉 On deployed servers (Render, Railway, Heroku, etc.):");
+    console.warn("   Add EMAIL_USER and EMAIL_PASS in your hosting dashboard's Environment Variables.");
+    console.warn("==================================================");
+    return {
+      success: false,
+      simulated: true,
+      error: "EMAIL_USER and EMAIL_PASS are not configured in server environment variables."
+    };
   }
 
   try {
@@ -211,11 +232,18 @@ TaskFlow Management Team
       }
     });
 
-    console.log(`✅ [REAL-TIME EMAIL DELIVERED] ID: ${info.messageId} to ${toEmail}`);
+    console.log(`✅ [EMAIL DELIVERED] ID: ${info.messageId} to ${toEmail}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("❌ Failed to send real email:", error.message);
-    return { success: false, error: error.message };
+    console.error("❌ Failed to send email via SMTP:");
+    console.error(`   Message: ${error.message}`);
+    console.error(`   Code: ${error.code || "UNKNOWN"}`);
+    if (error.code === "EAUTH") {
+      console.error("   Troubleshooting: Authentication failed. Verify your Gmail 16-character App Password (ensure no spaces or typos).");
+    } else if (error.code === "ETIMEDOUT" || error.code === "ESOCKETTIMEDOUT") {
+      console.error("   Troubleshooting: Connection timed out. Ensure outbound port 465 is allowed by your cloud host.");
+    }
+    return { success: false, error: error.message, code: error.code };
   }
 };
 
