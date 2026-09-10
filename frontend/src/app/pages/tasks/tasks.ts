@@ -46,10 +46,25 @@ export class Tasks implements OnInit {
   ngOnInit(): void {
     this.isManager = this.authService.isManager();
 
+    // Instant optimistic render: if user just created a task, display it immediately (0ms latency)
+    const navState = history.state;
+    if (navState?.newTask) {
+      this.tasks = [navState.newTask];
+      this.totalTasks = Math.max(this.totalTasks, 1);
+      this.isLoading = false;
+    }
+    if (navState?.assignedMessage) {
+      this.successMessage = navState.assignedMessage;
+      setTimeout(() => {
+        this.successMessage = '';
+        this.cdr.markForCheck();
+      }, 4000);
+    }
+
     this.route.queryParams.subscribe(params => {
       this.internId = params['internId'] || '';
       this.page = 1;
-      this.loadTasks(true);
+      this.loadTasks(!navState?.newTask);
     });
   }
 

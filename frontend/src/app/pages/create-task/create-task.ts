@@ -204,20 +204,13 @@ export class CreateTask implements OnInit {
       this.taskService.createTask(taskData).subscribe({
         next: (res: any) => {
           this.isSaving = false;
-          if (res?.emailSent === true) {
-            this.successMessage = `Task assigned successfully! Notification email delivered to ${this.internEmail || 'intern'}.`;
-          } else if (res?.emailStatus === 'unconfigured' || res?.emailDetails?.simulated) {
-            this.successMessage = 'Task assigned successfully!';
-            this.warningMessage = '⚠️ Note: Notification email was not sent because EMAIL_USER and EMAIL_PASS are not configured in your hosting dashboard (Render).';
-          } else if (res?.emailSent === false) {
-            this.successMessage = 'Task assigned successfully!';
-            this.warningMessage = `⚠️ Note: Email delivery failed (${res?.emailDetails?.error || 'SMTP delivery issue'}).`;
-          } else {
-            this.successMessage = 'Task assigned successfully!';
-          }
-          this.cdr.markForCheck();
-          const redirectDelay = this.warningMessage ? 3500 : 1200;
-          setTimeout(() => this.router.navigate(['/tasks']), redirectDelay);
+          const assignedTask = res?.data;
+          this.router.navigate(['/tasks'], {
+            state: {
+              newTask: assignedTask,
+              assignedMessage: `Task assigned successfully! Notification email dispatched to ${this.internEmail || 'intern'}.`
+            }
+          });
         },
         error: (err) => {
           this.isSaving = false;

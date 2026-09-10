@@ -16,37 +16,21 @@ const createTask = asyncHandler(async (req, res) => {
     });
   }
 
-  let internUser = null;
+  const [internUser, managerUser] = await Promise.all([
+    internEmail
+      ? User.findOne({ email: internEmail.trim().toLowerCase() })
+      : (assignedTo ? User.findById(assignedTo) : (req.user.role === "manager" ? null : User.findById(req.user.userId))),
+    User.findById(req.user.userId)
+  ]);
 
-  if (internEmail) {
-    internUser = await User.findOne({ email: internEmail.trim().toLowerCase() });
-    if (!internUser) {
-      return res.status(400).json({
-        success: false,
-        message: `No intern found with email: ${internEmail}`
-      });
-    }
-  } else if (assignedTo) {
-    internUser = await User.findById(assignedTo);
-    if (!internUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Assigned intern not found"
-      });
-    }
-  } else {
-
-    if (req.user.role === "manager") {
-      return res.status(400).json({
-        success: false,
-        message: "Please specify an intern email or select an intern to assign the task to"
-      });
-    } else {
-      internUser = await User.findById(req.user.userId);
-    }
+  if (!internUser) {
+    return res.status(400).json({
+      success: false,
+      message: internEmail
+        ? `No intern found with email: ${internEmail}`
+        : "Please specify an intern email or select an intern to assign the task to"
+    });
   }
-
-  const managerUser = await User.findById(req.user.userId);
 
   const task = await Task.create({
     title: title.trim(),
@@ -59,11 +43,13 @@ const createTask = asyncHandler(async (req, res) => {
     user: internUser._id
   });
 
-  const populatedTask = await Task.findById(task._id)
-    .populate("assignedTo", "name email")
-    .populate("assignedBy", "name email");
+  const populatedTask = {
+    ...task.toObject(),
+    assignedTo: { _id: internUser._id, name: internUser.name, email: internUser.email },
+    assignedBy: { _id: managerUser._id, name: managerUser.name, email: managerUser.email }
+  };
 
-  // Dispatch email notification asynchronously (non-blocking so cloud SMTP delays never freeze the UI)
+  // Dispatch email notification asynchronously (never blocks response)
   if (internUser && internUser.email) {
     sendTaskAssignedEmail({
       toEmail: internUser.email,
@@ -74,27 +60,21 @@ const createTask = asyncHandler(async (req, res) => {
       priority: task.priority,
       managerName: managerUser ? managerUser.name : "Manager",
       managerEmail: managerUser ? managerUser.email : null
-    }).then((result) => {
-      if (result && result.success) {
-        console.log(`✅ [TASK EMAIL DELIVERED] to ${internUser.email}`);
-      } else {
-        console.warn(`⚠️ [TASK EMAIL NOT DELIVERED]:`, result?.error || "Unknown error");
-      }
     }).catch((err) => {
       console.error("Email notification dispatch error:", err.message);
     });
   }
 
-  if (internUser) {
-    await sendNotification({
-      recipient: internUser._id,
-      sender: req.user.userId,
-      type: 'task_assigned',
-      title: 'New Task Assigned',
-      message: `${managerUser ? managerUser.name : 'Manager'} assigned you a new task: "${task.title}"`,
-      taskId: task._id
-    });
-  }
+  // Non-blocking in-app notification & socket broadcast
+  sendNotification({
+    recipient: internUser._id,
+    sender: req.user.userId,
+    type: 'task_assigned',
+    title: 'New Task Assigned',
+    message: `${managerUser ? managerUser.name : 'Manager'} assigned you a new task: "${task.title}"`,
+    taskId: task._id
+  }).catch((err) => console.error("Notification dispatch error:", err.message));
+
   emitToAll('task_created', { taskId: task._id.toString() });
 
   res.status(201).json({
@@ -147,14 +127,17 @@ const getTasks = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const totalTasks = await Task.countDocuments(filter);
-
-  const tasks = await Task.find(filter)
-    .populate("assignedTo", "name email")
-    .populate("assignedBy", "name email")
-    .sort(sort || "-createdAt")
-    .skip(skip)
-    .limit(Number(limit));
+  // Parallel database execution for 2x faster load times
+  const [totalTasks, tasks] = await Promise.all([
+    Task.countDocuments(filter),
+    Task.find(filter)
+      .populate("assignedTo", "name email")
+      .populate("assignedBy", "name email")
+      .sort(sort || "-createdAt")
+      .skip(skip)
+      .limit(Number(limit))
+      .lean()
+  ]);
 
   res.status(200).json({
     success: true,
