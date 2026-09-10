@@ -267,19 +267,22 @@ TaskFlow Management Team
 </html>
 `;
 
-  const senderDisplayName = managerName ? `${managerName} via TaskFlow` : "TaskFlow";
+  const senderEmail = user || "taskflowmanger@gmail.com";
+  const senderDisplayName = managerName
+    ? `${managerName} via TaskFlow (${senderEmail})`
+    : `TaskFlow (${senderEmail})`;
 
   // 1. Try HTTPS REST API first if configured (Bypasses cloud SMTP port blocking on Render free tier)
   if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
     const httpResult = await sendViaHttpApi({
       fromName: senderDisplayName,
-      fromEmail: user,
+      fromEmail: senderEmail,
       toEmail,
       toName: internName,
       subject: emailSubject,
       html: emailHtml,
       text: emailText,
-      replyTo: managerEmail || user || "taskflowmanger@gmail.com"
+      replyTo: senderEmail
     });
     if (httpResult) return httpResult;
   }
