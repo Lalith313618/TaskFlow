@@ -54,6 +54,7 @@ const createTask = asyncHandler(async (req, res) => {
     sendTaskAssignedEmail({
       toEmail: internUser.email,
       internName: internUser.name,
+      taskId: task._id,
       taskTitle: task.title,
       taskDescription: task.description,
       dueDate: task.dueDate,

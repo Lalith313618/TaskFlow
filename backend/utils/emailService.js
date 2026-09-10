@@ -117,6 +117,7 @@ const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, h
 const sendTaskAssignedEmail = async ({
   toEmail,
   internName,
+  taskId,
   taskTitle,
   taskDescription,
   dueDate,
@@ -140,7 +141,9 @@ const sendTaskAssignedEmail = async ({
   const priorityColor =
     priority === "high" ? "#dc2626" : priority === "low" ? "#16a34a" : "#ea580c";
 
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
+  // Production deployed Vercel frontend URL
+  const frontendUrl = (process.env.FRONTEND_URL || "https://task-flow-lalith10.vercel.app").replace(/\/$/, "");
+  const taskViewUrl = taskId ? `${frontendUrl}/tasks/${taskId}` : `${frontendUrl}/tasks`;
 
   // Anti-spam subject: Professional, specific, no caps-lock spam words
   const emailSubject = `[TaskFlow] New Task Assigned: ${taskTitle}`;
@@ -157,7 +160,7 @@ TASK DETAILS:
 ${taskDescription ? `- Instructions: ${taskDescription}\n` : ""}
 
 Please log in to your dashboard to review task details, submit updates, and communicate with your manager:
-${frontendUrl}/tasks
+${taskViewUrl}
 
 Best regards,
 TaskFlow Management Team
@@ -234,7 +237,7 @@ TaskFlow Management Team
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
                   <td align="center">
-                    <a href="${frontendUrl}/tasks" target="_blank" style="display: inline-block; background-color: #0f766e; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 6px; box-shadow: 0 2px 4px rgba(15, 118, 110, 0.25);">
+                    <a href="${taskViewUrl}" target="_blank" style="display: inline-block; background-color: #0f766e; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 28px; border-radius: 6px; box-shadow: 0 2px 4px rgba(15, 118, 110, 0.25);">
                       View Task &amp; Open Discussion
                     </a>
                   </td>
