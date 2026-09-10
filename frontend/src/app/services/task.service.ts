@@ -17,7 +17,26 @@ export class TaskService {
   private statsCache: any = null;
   private internsCache: any = null;
 
+  // One-time flash notification for task assignment / creation
+  private pendingFlashMessage: string | null = null;
+  private pendingNewTask: any | null = null;
+
   constructor(private http: HttpClient) {}
+
+  setPendingAssignment(task: any, message: string): void {
+    this.pendingNewTask = task;
+    this.pendingFlashMessage = message;
+  }
+
+  consumePendingAssignment(): { task: any | null; message: string | null } {
+    const data = {
+      task: this.pendingNewTask,
+      message: this.pendingFlashMessage
+    };
+    this.pendingNewTask = null;
+    this.pendingFlashMessage = null;
+    return data;
+  }
 
   clearTasksCache(): void {
     this.tasksCache.clear();

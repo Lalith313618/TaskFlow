@@ -59,31 +59,34 @@ export class Tasks implements OnInit {
       } catch (_) {}
     }
 
-    // 2. Instant optimistic render: if user just created a task, display it immediately
-    const navState = history.state;
-    if (navState?.newTask) {
-      this.tasks = [navState.newTask, ...this.tasks.filter(t => t._id !== navState.newTask._id)];
+    // 2. Consume one-time assignment notification from TaskService (never persists on page refresh)
+    const pending = this.taskService.consumePendingAssignment();
+    if (pending.task) {
+      this.tasks = [pending.task, ...this.tasks.filter(t => t._id !== pending.task._id)];
       this.totalTasks = Math.max(this.totalTasks, this.tasks.length);
       this.isLoading = false;
       this.saveTasksCache(this.tasks);
     }
-    if (navState?.assignedMessage) {
-      this.successMessage = navState.assignedMessage;
+    if (pending.message) {
+      this.successMessage = pending.message;
       setTimeout(() => {
         this.successMessage = '';
         this.cdr.markForCheck();
       }, 4000);
     }
 
-    // Immediately clear one-time navigation state so page refresh won't re-trigger the alert
-    if (navState?.newTask || navState?.assignedMessage) {
-      try {
-        const cleanState = { ...history.state };
-        delete cleanState.newTask;
-        delete cleanState.assignedMessage;
-        history.replaceState(cleanState, '');
-      } catch (_) {}
-    }
+    // Sanitize browser history state to eliminate any stale persisted navigation states
+    try {
+      if (typeof window !== 'undefined' && window.history?.state) {
+        const state = window.history.state;
+        if (state.assignedMessage || state.newTask) {
+          const cleanState = { ...state };
+          delete cleanState.assignedMessage;
+          delete cleanState.newTask;
+          window.history.replaceState(cleanState, document.title, window.location.href);
+        }
+      }
+    } catch (_) {}
 
     this.route.queryParams.subscribe(params => {
       this.internId = params['internId'] || '';
