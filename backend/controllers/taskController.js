@@ -63,16 +63,24 @@ const createTask = asyncHandler(async (req, res) => {
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email");
 
-  sendTaskAssignedEmail({
-    toEmail: internUser.email,
-    internName: internUser.name,
-    taskTitle: task.title,
-    taskDescription: task.description,
-    dueDate: task.dueDate,
-    priority: task.priority,
-    managerName: managerUser ? managerUser.name : "Manager",
-    managerEmail: managerUser ? managerUser.email : null
-  }).catch((err) => console.error("Email notification dispatch error:", err.message));
+  let emailResult = null;
+  if (internUser && internUser.email) {
+    try {
+      emailResult = await sendTaskAssignedEmail({
+        toEmail: internUser.email,
+        internName: internUser.name,
+        taskTitle: task.title,
+        taskDescription: task.description,
+        dueDate: task.dueDate,
+        priority: task.priority,
+        managerName: managerUser ? managerUser.name : "Manager",
+        managerEmail: managerUser ? managerUser.email : null
+      });
+    } catch (err) {
+      console.error("Email notification dispatch error:", err.message);
+      emailResult = { success: false, error: err.message };
+    }
+  }
 
   if (internUser) {
     await sendNotification({
@@ -86,9 +94,17 @@ const createTask = asyncHandler(async (req, res) => {
   }
   emitToAll('task_created', { taskId: task._id.toString() });
 
+  const emailSent = Boolean(emailResult && emailResult.success);
+  const emailStatus = emailResult
+    ? (emailResult.success ? "delivered" : (emailResult.simulated ? "unconfigured" : "failed"))
+    : "skipped";
+
   res.status(201).json({
     success: true,
-    message: "Task assigned and created successfully",
+    message: "Task created successfully",
+    emailSent,
+    emailStatus,
+    emailDetails: emailResult,
     data: populatedTask
   });
 });

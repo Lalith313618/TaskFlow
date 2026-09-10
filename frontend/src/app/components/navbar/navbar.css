@@ -1,10 +1,19 @@
+:host {
+  display: block;
+  height: 64px;
+  width: 100%;
+}
+
 .app-navbar {
   height: 64px;
   background: #0f766e;
   color: white;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1000;
   box-shadow: 0 2px 10px rgba(15, 118, 110, 0.2);
 }
 
@@ -325,8 +334,16 @@
 }
 
 @media (max-width: 600px) {
+  :host {
+    height: 58px;
+  }
+
   .app-navbar {
     height: 58px;
+  }
+
+  .notif-dropdown {
+    top: 58px;
   }
 
   .navbar-container {

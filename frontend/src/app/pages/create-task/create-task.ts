@@ -33,6 +33,7 @@ export class CreateTask implements OnInit {
   isLoading = false;
   isSaving = false;
   errorMessage = '';
+  warningMessage = '';
   successMessage = '';
 
   constructor(
@@ -143,6 +144,7 @@ export class CreateTask implements OnInit {
 
   onSubmit(): void {
     this.errorMessage = '';
+    this.warningMessage = '';
     this.successMessage = '';
 
     if (!this.title.trim()) {
@@ -190,6 +192,8 @@ export class CreateTask implements OnInit {
           this.isSaving = false;
           if (err.error?.errors && Array.isArray(err.error.errors)) {
             this.errorMessage = err.error.errors.join(', ');
+          } else if (err.status === 0 || err.error?.message === 'Failed to fetch' || err.message?.includes('Failed to fetch')) {
+            this.errorMessage = 'Unable to connect to server. If on Render free tier, it may be waking up from idle (~45s). Please try again in a moment.';
           } else {
             this.errorMessage = err.error?.message || 'Failed to update task.';
           }
@@ -198,16 +202,29 @@ export class CreateTask implements OnInit {
       });
     } else {
       this.taskService.createTask(taskData).subscribe({
-        next: () => {
+        next: (res: any) => {
           this.isSaving = false;
-          this.successMessage = 'Task assigned successfully! Notification email dispatched.';
+          if (res?.emailSent === true) {
+            this.successMessage = `Task assigned successfully! Notification email delivered to ${this.internEmail || 'intern'}.`;
+          } else if (res?.emailStatus === 'unconfigured' || res?.emailDetails?.simulated) {
+            this.successMessage = 'Task assigned successfully!';
+            this.warningMessage = '⚠️ Note: Notification email was not sent because EMAIL_USER and EMAIL_PASS are not configured in your hosting dashboard (Render).';
+          } else if (res?.emailSent === false) {
+            this.successMessage = 'Task assigned successfully!';
+            this.warningMessage = `⚠️ Note: Email delivery failed (${res?.emailDetails?.error || 'SMTP delivery issue'}).`;
+          } else {
+            this.successMessage = 'Task assigned successfully!';
+          }
           this.cdr.markForCheck();
-          setTimeout(() => this.router.navigate(['/tasks']), 1200);
+          const redirectDelay = this.warningMessage ? 3500 : 1200;
+          setTimeout(() => this.router.navigate(['/tasks']), redirectDelay);
         },
         error: (err) => {
           this.isSaving = false;
           if (err.error?.errors && Array.isArray(err.error.errors)) {
             this.errorMessage = err.error.errors.join(', ');
+          } else if (err.status === 0 || err.error?.message === 'Failed to fetch' || err.message?.includes('Failed to fetch')) {
+            this.errorMessage = 'Unable to connect to server. If on Render free tier, it may be waking up from idle (~45s). Please try again in a moment.';
           } else {
             this.errorMessage = err.error?.message || 'Failed to assign task.';
           }
