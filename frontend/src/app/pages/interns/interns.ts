@@ -22,6 +22,17 @@ export class Interns implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    try {
+      const cached = localStorage.getItem('taskflow_cached_interns');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.interns = parsed;
+          this.isLoading = false;
+        }
+      }
+    } catch (_) {}
+
     this.loadInterns();
   }
 
@@ -37,7 +48,10 @@ export class Interns implements OnInit {
         this.isLoading = false;
         if (res && res.success && res.data) {
           this.interns = res.data;
-        } else {
+          try {
+            localStorage.setItem('taskflow_cached_interns', JSON.stringify(res.data));
+          } catch (_) {}
+        } else if (this.interns.length === 0) {
           this.interns = [];
         }
         this.cdr.markForCheck();

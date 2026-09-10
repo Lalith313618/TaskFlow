@@ -43,7 +43,22 @@ export class Dashboard implements OnInit, OnDestroy {
     if (user && user.name) {
       this.userName = user.name;
     }
-    this.loadStats();
+
+    // 1. Instant Cache Load (0ms - zero delay or flicker when switching screens or refreshing)
+    try {
+      const cached = localStorage.getItem('taskflow_cached_stats');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          this.stats = { ...this.stats, ...parsed };
+          if (Array.isArray(parsed.recentTasks)) {
+            this.recentTasks = parsed.recentTasks;
+          }
+        }
+      }
+    } catch (_) {}
+
+    this.loadStats(true);
   }
 
   ngOnDestroy(): void {
@@ -70,13 +85,16 @@ export class Dashboard implements OnInit, OnDestroy {
         if (response && response.data) {
           this.stats = response.data;
           this.recentTasks = response.data.recentTasks || [];
+          try {
+            localStorage.setItem('taskflow_cached_stats', JSON.stringify(response.data));
+          } catch (_) {}
         }
         this.isSyncing = false;
         this.cdr.markForCheck();
       },
       error: (error: any) => {
         this.isSyncing = false;
-        if (!silent) {
+        if (!silent && !this.stats.totalTasks && !this.stats.totalInterns) {
           this.errorMessage = error.error?.message || 'Failed to sync latest stats. Please retry.';
         }
         this.cdr.markForCheck();

@@ -54,6 +54,23 @@ export class CreateTask implements OnInit {
     if (queryInternEmail) this.internEmail = queryInternEmail;
     if (queryInternId) this.assignedTo = queryInternId;
 
+    // Instant cache load for interns dropdown (0ms latency)
+    try {
+      const cached = localStorage.getItem('taskflow_cached_interns');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.internsList = parsed;
+          if (this.assignedTo) {
+            const found = this.internsList.find(i => i._id === this.assignedTo);
+            if (found && !this.internEmail) {
+              this.internEmail = found.email;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
     if (this.isManager) {
       this.loadInterns();
     }
@@ -66,13 +83,18 @@ export class CreateTask implements OnInit {
   }
 
   loadInterns(): void {
-    this.isLoadingInterns = true;
+    if (this.internsList.length === 0) {
+      this.isLoadingInterns = true;
+    }
     this.cdr.markForCheck();
     this.taskService.getInterns().subscribe({
       next: (res) => {
         this.isLoadingInterns = false;
         if (res.success && res.data) {
           this.internsList = res.data;
+          try {
+            localStorage.setItem('taskflow_cached_interns', JSON.stringify(res.data));
+          } catch (_) {}
           if (this.assignedTo) {
             const found = this.internsList.find(i => i._id === this.assignedTo);
             if (found && !this.internEmail) {

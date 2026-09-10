@@ -40,11 +40,13 @@ export class TaskService {
 
   clearTasksCache(): void {
     this.tasksCache.clear();
-    this.statsCache = null;
   }
 
   clearInternsCache(): void {
     this.internsCache = null;
+    try {
+      localStorage.removeItem('taskflow_cached_interns');
+    } catch (_) {}
   }
 
   createTask(data: any): Observable<any> {
@@ -73,7 +75,25 @@ export class TaskService {
       })
     );
 
-    const cached = this.tasksCache.get(cacheKey);
+    let cached = this.tasksCache.get(cacheKey);
+    // If not in memory and requesting default page 1, check persistent localStorage
+    if (!cached && cacheKey.includes('page=1') && !params?.search && !params?.status && !params?.priority && !params?.internId) {
+      try {
+        const local = localStorage.getItem('taskflow_cached_tasks');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cached = {
+              success: true,
+              data: parsed,
+              pagination: { currentPage: 1, totalPages: 1, totalTasks: parsed.length }
+            };
+            this.tasksCache.set(cacheKey, cached);
+          }
+        }
+      } catch (_) {}
+    }
+
     if (!forceRefresh && cached) {
       // Emit cached data immediately (0ms latency), then fetch fresh data in background
       return concat(of(cached), fetch$);
@@ -109,13 +129,30 @@ export class TaskService {
       tap(res => {
         if (res && res.success) {
           this.statsCache = res;
+          try {
+            localStorage.setItem('taskflow_cached_stats', JSON.stringify(res.data));
+          } catch (_) {}
         }
       })
     );
 
-    if (!forceRefresh && this.statsCache) {
-      // Return cached stats immediately, then refresh silently in background
-      return concat(of(this.statsCache), fetch$);
+    let cached = this.statsCache;
+    if (!cached) {
+      try {
+        const local = localStorage.getItem('taskflow_cached_stats');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && typeof parsed === 'object') {
+            cached = { success: true, data: parsed };
+            this.statsCache = cached;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!forceRefresh && cached) {
+      // Return cached stats immediately (0ms), then refresh silently in background
+      return concat(of(cached), fetch$);
     }
 
     return fetch$;
@@ -140,13 +177,30 @@ export class TaskService {
       tap(res => {
         if (res && res.success) {
           this.internsCache = res;
+          try {
+            localStorage.setItem('taskflow_cached_interns', JSON.stringify(res.data));
+          } catch (_) {}
         }
       })
     );
 
-    if (!forceRefresh && this.internsCache) {
+    let cached = this.internsCache;
+    if (!cached) {
+      try {
+        const local = localStorage.getItem('taskflow_cached_interns');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cached = { success: true, data: parsed };
+            this.internsCache = cached;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!forceRefresh && cached) {
       // Return cached interns immediately, then refresh silently in background
-      return concat(of(this.internsCache), fetch$);
+      return concat(of(cached), fetch$);
     }
 
     return fetch$;
