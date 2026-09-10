@@ -44,10 +44,11 @@ const createTransporter = () => {
  * Send email via HTTPS REST API (Port 443).
  * Essential for cloud hosts (like Render free tier) that block outbound SMTP ports 25, 465, 587.
  */
-const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, html, text }) => {
+const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, html, text, replyTo }) => {
   // 1. Resend API (HTTPS port 443 - free tier: 3,000 emails/month)
   if (process.env.RESEND_API_KEY) {
     try {
+      const replyAddress = replyTo || fromEmail || process.env.EMAIL_USER || "taskflowmanger@gmail.com";
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -57,6 +58,7 @@ const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, h
         body: JSON.stringify({
           from: process.env.RESEND_FROM || `${fromName} <onboarding@resend.dev>`,
           to: [toEmail],
+          reply_to: replyAddress,
           subject,
           html,
           text
@@ -276,7 +278,8 @@ TaskFlow Management Team
       toName: internName,
       subject: emailSubject,
       html: emailHtml,
-      text: emailText
+      text: emailText,
+      replyTo: managerEmail || user || "taskflowmanger@gmail.com"
     });
     if (httpResult) return httpResult;
   }
