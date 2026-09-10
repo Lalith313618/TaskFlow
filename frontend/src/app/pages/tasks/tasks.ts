@@ -177,21 +177,39 @@ export class Tasks implements OnInit {
   deleteTask(): void {
     if (!this.taskToDelete) return;
 
-    const id = this.taskToDelete._id;
+    const task = this.taskToDelete;
+    const id = task._id;
+    const taskIndex = this.tasks.findIndex(t => t._id === id);
+
+    // 1. INSTANT OPTIMISTIC REMOVAL (0ms latency - UI updates immediately)
+    this.tasks = this.tasks.filter(t => t._id !== id);
+    if (this.totalTasks > 0) this.totalTasks -= 1;
+    this.taskToDelete = null;
+    this.successMessage = 'Task deleted successfully';
+    this.cdr.markForCheck();
+
+    setTimeout(() => {
+      this.successMessage = '';
+      this.cdr.markForCheck();
+    }, 3000);
+
+    // 2. Perform background server deletion
     this.taskService.deleteTask(id).subscribe({
       next: () => {
-        this.taskToDelete = null;
-        this.successMessage = 'Task deleted successfully';
-        this.cdr.markForCheck();
-        setTimeout(() => {
-          this.successMessage = '';
-          this.cdr.markForCheck();
-        }, 3000);
-        this.loadTasks();
+        // If current page is now empty and there are other pages, adjust page
+        if (this.tasks.length === 0 && this.page > 1) {
+          this.page -= 1;
+          this.loadTasks();
+        }
       },
       error: (err) => {
-        this.taskToDelete = null;
-        this.errorMessage = err.error?.message || 'Failed to delete task';
+        // Rollback on server error
+        if (taskIndex !== -1) {
+          this.tasks.splice(taskIndex, 0, task);
+          this.totalTasks += 1;
+        }
+        this.errorMessage = err.error?.message || 'Failed to delete task on server';
+        this.successMessage = '';
         this.cdr.markForCheck();
       }
     });
