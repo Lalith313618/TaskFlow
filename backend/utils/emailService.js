@@ -287,7 +287,10 @@ TaskFlow Management Team
       text: emailText,
       replyTo: senderEmail
     });
-    if (httpResult) return httpResult;
+    if (httpResult && httpResult.success) {
+      return httpResult;
+    }
+    console.warn("⚠️ HTTP API delivery skipped or restricted (e.g. Resend unverified recipient limit). Falling back to direct Gmail SMTP...", httpResult?.error);
   }
 
   // Fallback if credentials are not configured in environment
