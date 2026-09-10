@@ -65,7 +65,7 @@ export class Tasks implements OnInit {
       this.tasks = [navState.newTask, ...this.tasks.filter(t => t._id !== navState.newTask._id)];
       this.totalTasks = Math.max(this.totalTasks, this.tasks.length);
       this.isLoading = false;
-      localStorage.setItem('taskflow_cached_tasks', JSON.stringify(this.tasks));
+      this.saveTasksCache(this.tasks);
     }
     if (navState?.assignedMessage) {
       this.successMessage = navState.assignedMessage;
@@ -73,6 +73,16 @@ export class Tasks implements OnInit {
         this.successMessage = '';
         this.cdr.markForCheck();
       }, 4000);
+    }
+
+    // Immediately clear one-time navigation state so page refresh won't re-trigger the alert
+    if (navState?.newTask || navState?.assignedMessage) {
+      try {
+        const cleanState = { ...history.state };
+        delete cleanState.newTask;
+        delete cleanState.assignedMessage;
+        history.replaceState(cleanState, '');
+      } catch (_) {}
     }
 
     this.route.queryParams.subscribe(params => {
