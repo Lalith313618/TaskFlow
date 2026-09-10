@@ -82,6 +82,41 @@ export class Tasks implements OnInit {
     });
   }
 
+  private saveTasksCache(tasks: any[]): void {
+    try {
+      localStorage.setItem('taskflow_cached_tasks', JSON.stringify(tasks));
+    } catch (_) {}
+  }
+
+  private removeCachedTask(id: string): void {
+    try {
+      const cached = localStorage.getItem('taskflow_cached_tasks');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((t: any) => t._id !== id);
+          localStorage.setItem('taskflow_cached_tasks', JSON.stringify(filtered));
+        }
+      }
+    } catch (_) {}
+  }
+
+  private updateCachedTask(task: any): void {
+    try {
+      const cached = localStorage.getItem('taskflow_cached_tasks');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const idx = parsed.findIndex((t: any) => t._id === task._id);
+          if (idx !== -1) {
+            parsed[idx] = { ...parsed[idx], ...task };
+            localStorage.setItem('taskflow_cached_tasks', JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   loadTasks(isInitial = false): void {
     if (isInitial && this.tasks.length === 0) {
       this.isLoading = true;
@@ -121,7 +156,7 @@ export class Tasks implements OnInit {
             this.totalTasks = res.pagination.totalTasks;
           }
           if (!this.internId && !this.search && !this.status && !this.priority && this.page === 1) {
-            localStorage.setItem('taskflow_cached_tasks', JSON.stringify(this.tasks));
+            this.saveTasksCache(this.tasks);
           }
         }
         this.cdr.markForCheck();
@@ -167,6 +202,7 @@ export class Tasks implements OnInit {
     this.taskService.updateTaskStatus(task._id, newStatus).subscribe({
       next: () => {
         task.status = newStatus;
+        this.updateCachedTask(task);
         this.successMessage = `Task status updated to ${newStatus}`;
         this.cdr.markForCheck();
         setTimeout(() => {
@@ -203,6 +239,13 @@ export class Tasks implements OnInit {
     if (this.totalTasks > 0) this.totalTasks -= 1;
     this.taskToDelete = null;
     this.successMessage = 'Task deleted successfully';
+
+    // Immediately remove from localStorage cache so refresh won't flash the deleted task
+    this.removeCachedTask(id);
+    if (!this.internId && !this.search && !this.status && !this.priority && this.page === 1) {
+      this.saveTasksCache(this.tasks);
+    }
+
     this.cdr.markForCheck();
 
     setTimeout(() => {
@@ -213,6 +256,9 @@ export class Tasks implements OnInit {
     // 2. Perform background server deletion
     this.taskService.deleteTask(id).subscribe({
       next: () => {
+        // Ensure cache is definitely cleansed of deleted task
+        this.removeCachedTask(id);
+
         // If current page is now empty and there are other pages, adjust page
         if (this.tasks.length === 0 && this.page > 1) {
           this.page -= 1;
@@ -224,6 +270,9 @@ export class Tasks implements OnInit {
         if (taskIndex !== -1) {
           this.tasks.splice(taskIndex, 0, task);
           this.totalTasks += 1;
+          if (!this.internId && !this.search && !this.status && !this.priority && this.page === 1) {
+            this.saveTasksCache(this.tasks);
+          }
         }
         this.errorMessage = err.error?.message || 'Failed to delete task on server';
         this.successMessage = '';
