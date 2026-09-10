@@ -205,10 +205,13 @@ export class CreateTask implements OnInit {
         next: (res: any) => {
           this.isSaving = false;
           const assignedTask = res?.data;
+          const dispatchMessage = `Task assigned successfully! Notification email dispatched to ${this.internEmail || 'intern'}.`;
+          this.successMessage = dispatchMessage;
+          this.cdr.markForCheck();
           this.router.navigate(['/tasks'], {
             state: {
               newTask: assignedTask,
-              assignedMessage: `Task assigned successfully! Notification email dispatched to ${this.internEmail || 'intern'}.`
+              assignedMessage: dispatchMessage
             }
           });
         },
