@@ -59,10 +59,11 @@
       </div>
     </div>
 
-    @if (isLoading) {
-      <div class="empty-state loading-state-box">
-        <p class="empty-title loading-title"> Loading tasks...</p>
-        <p class="empty-desc">Fetching assigned tasks and status updates.</p>
+    @if (isLoading && tasks.length === 0) {
+      <div class="tasks-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
       </div>
     }
     @if (!isLoading && tasks.length === 0) {
@@ -74,7 +75,7 @@
         }
       </div>
     }
-    @if (!isLoading && tasks.length > 0) {
+    @if (tasks.length > 0) {
       <div class="tasks-grid">
         @for (task of tasks; track task._id) {
           <div class="task-card" [class.task-completed]="task.status === 'completed'">

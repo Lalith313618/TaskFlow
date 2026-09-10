@@ -46,12 +46,26 @@ export class Tasks implements OnInit {
   ngOnInit(): void {
     this.isManager = this.authService.isManager();
 
-    // Instant optimistic render: if user just created a task, display it immediately (0ms latency)
+    // 1. Instant cache load: render existing tasks immediately on refresh (0ms latency, zero flicker)
+    const cached = localStorage.getItem('taskflow_cached_tasks');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.tasks = parsed;
+          this.totalTasks = parsed.length;
+          this.isLoading = false;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Instant optimistic render: if user just created a task, display it immediately
     const navState = history.state;
     if (navState?.newTask) {
-      this.tasks = [navState.newTask];
-      this.totalTasks = Math.max(this.totalTasks, 1);
+      this.tasks = [navState.newTask, ...this.tasks.filter(t => t._id !== navState.newTask._id)];
+      this.totalTasks = Math.max(this.totalTasks, this.tasks.length);
       this.isLoading = false;
+      localStorage.setItem('taskflow_cached_tasks', JSON.stringify(this.tasks));
     }
     if (navState?.assignedMessage) {
       this.successMessage = navState.assignedMessage;
@@ -64,7 +78,7 @@ export class Tasks implements OnInit {
     this.route.queryParams.subscribe(params => {
       this.internId = params['internId'] || '';
       this.page = 1;
-      this.loadTasks(!navState?.newTask);
+      this.loadTasks(this.tasks.length === 0);
     });
   }
 
@@ -105,6 +119,9 @@ export class Tasks implements OnInit {
             this.page = res.pagination.currentPage;
             this.totalPages = res.pagination.totalPages;
             this.totalTasks = res.pagination.totalTasks;
+          }
+          if (!this.internId && !this.search && !this.status && !this.priority && this.page === 1) {
+            localStorage.setItem('taskflow_cached_tasks', JSON.stringify(this.tasks));
           }
         }
         this.cdr.markForCheck();
