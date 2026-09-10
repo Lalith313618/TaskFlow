@@ -1,15 +1,6 @@
 const nodemailer = require("nodemailer");
 
-let cachedTransporter = null;
-
-/**
- * Creates and pools a verified Nodemailer transporter
- */
-const getTransporter = () => {
-  if (cachedTransporter) {
-    return cachedTransporter;
-  }
-
+const createTransporter = () => {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
 
@@ -17,25 +8,20 @@ const getTransporter = () => {
     return null;
   }
 
-  // Support custom SMTP (e.g., SendGrid, Brevo, Outlook) or default to Gmail
-  const transportConfig = process.env.SMTP_HOST
-    ? {
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_PORT === "465",
-        auth: { user, pass },
-        pool: true,
-        maxConnections: 5,
-        maxMessages: 100
-      }
-    : {
-        service: "gmail",
-        auth: { user, pass },
-        pool: true
-      };
+  if (process.env.SMTP_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_PORT === "465",
+      auth: { user, pass }
+    });
+  }
 
-  cachedTransporter = nodemailer.createTransport(transportConfig);
-  return cachedTransporter;
+  // Gmail SMTP with direct SSL/TLS prevents ECONNRESET on idle connections
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass }
+  });
 };
 
 /**
@@ -53,10 +39,11 @@ const sendTaskAssignedEmail = async ({
   taskDescription,
   dueDate,
   priority,
-  managerName
+  managerName,
+  managerEmail
 }) => {
   const user = process.env.EMAIL_USER;
-  const transporter = getTransporter();
+  const transporter = createTransporter();
 
   const formattedDate = dueDate
     ? new Date(dueDate).toLocaleDateString("en-US", {
@@ -210,9 +197,10 @@ TaskFlow Management Team
   }
 
   try {
+    const senderDisplayName = managerName ? `${managerName} via TaskFlow` : "TaskFlow";
     const info = await transporter.sendMail({
-      from: `"TaskFlow Team" <${user}>`,
-      replyTo: user,
+      from: `"${senderDisplayName}" <${user}>`,
+      replyTo: managerEmail || user,
       to: toEmail,
       subject: emailSubject,
       text: emailText,

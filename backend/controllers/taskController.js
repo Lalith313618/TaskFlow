@@ -70,7 +70,8 @@ const createTask = asyncHandler(async (req, res) => {
     taskDescription: task.description,
     dueDate: task.dueDate,
     priority: task.priority,
-    managerName: managerUser ? managerUser.name : "Manager"
+    managerName: managerUser ? managerUser.name : "Manager",
+    managerEmail: managerUser ? managerUser.email : null
   }).catch((err) => console.error("Email notification dispatch error:", err.message));
 
   if (internUser) {

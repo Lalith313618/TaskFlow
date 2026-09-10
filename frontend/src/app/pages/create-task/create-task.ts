@@ -150,6 +150,11 @@ export class CreateTask implements OnInit {
       return;
     }
 
+    if (this.title.trim().length < 3) {
+      this.errorMessage = 'Task title must be at least 3 characters';
+      return;
+    }
+
     if (this.isManager && !this.internEmail.trim() && !this.assignedTo) {
       this.errorMessage = 'Please select or enter an intern to assign this task to';
       return;
@@ -183,7 +188,11 @@ export class CreateTask implements OnInit {
         },
         error: (err) => {
           this.isSaving = false;
-          this.errorMessage = err.error?.message || 'Failed to update task.';
+          if (err.error?.errors && Array.isArray(err.error.errors)) {
+            this.errorMessage = err.error.errors.join(', ');
+          } else {
+            this.errorMessage = err.error?.message || 'Failed to update task.';
+          }
           this.cdr.markForCheck();
         }
       });
@@ -197,7 +206,11 @@ export class CreateTask implements OnInit {
         },
         error: (err) => {
           this.isSaving = false;
-          this.errorMessage = err.error?.message || 'Failed to assign task.';
+          if (err.error?.errors && Array.isArray(err.error.errors)) {
+            this.errorMessage = err.error.errors.join(', ');
+          } else {
+            this.errorMessage = err.error?.message || 'Failed to assign task.';
+          }
           this.cdr.markForCheck();
         }
       });
