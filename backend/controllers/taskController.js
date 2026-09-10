@@ -63,23 +63,26 @@ const createTask = asyncHandler(async (req, res) => {
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email");
 
-  let emailResult = null;
+  // Dispatch email notification asynchronously (non-blocking so cloud SMTP delays never freeze the UI)
   if (internUser && internUser.email) {
-    try {
-      emailResult = await sendTaskAssignedEmail({
-        toEmail: internUser.email,
-        internName: internUser.name,
-        taskTitle: task.title,
-        taskDescription: task.description,
-        dueDate: task.dueDate,
-        priority: task.priority,
-        managerName: managerUser ? managerUser.name : "Manager",
-        managerEmail: managerUser ? managerUser.email : null
-      });
-    } catch (err) {
+    sendTaskAssignedEmail({
+      toEmail: internUser.email,
+      internName: internUser.name,
+      taskTitle: task.title,
+      taskDescription: task.description,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      managerName: managerUser ? managerUser.name : "Manager",
+      managerEmail: managerUser ? managerUser.email : null
+    }).then((result) => {
+      if (result && result.success) {
+        console.log(`✅ [TASK EMAIL DELIVERED] to ${internUser.email}`);
+      } else {
+        console.warn(`⚠️ [TASK EMAIL NOT DELIVERED]:`, result?.error || "Unknown error");
+      }
+    }).catch((err) => {
       console.error("Email notification dispatch error:", err.message);
-      emailResult = { success: false, error: err.message };
-    }
+    });
   }
 
   if (internUser) {
@@ -94,17 +97,9 @@ const createTask = asyncHandler(async (req, res) => {
   }
   emitToAll('task_created', { taskId: task._id.toString() });
 
-  const emailSent = Boolean(emailResult && emailResult.success);
-  const emailStatus = emailResult
-    ? (emailResult.success ? "delivered" : (emailResult.simulated ? "unconfigured" : "failed"))
-    : "skipped";
-
   res.status(201).json({
     success: true,
     message: "Task created successfully",
-    emailSent,
-    emailStatus,
-    emailDetails: emailResult,
     data: populatedTask
   });
 });

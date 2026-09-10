@@ -34,10 +34,74 @@ const createTransporter = () => {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000
   });
+};
+
+/**
+ * Send email via HTTPS REST API (Port 443).
+ * Essential for cloud hosts (like Render free tier) that block outbound SMTP ports 25, 465, 587.
+ */
+const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, html, text }) => {
+  // 1. Resend API (HTTPS port 443 - free tier: 3,000 emails/month)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || `${fromName} <onboarding@resend.dev>`,
+          to: [toEmail],
+          subject,
+          html,
+          text
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log(`✅ [HTTP API DELIVERED via Resend] ID: ${data.id} to ${toEmail}`);
+        return { success: true, messageId: data.id };
+      }
+      return { success: false, error: data.message || "Resend API error" };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // 2. Brevo / Sendinblue API (HTTPS port 443 - free tier: 300 emails/day)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          sender: { name: fromName, email: fromEmail || process.env.EMAIL_USER },
+          to: [{ email: toEmail, name: toName }],
+          subject,
+          htmlContent: html,
+          textContent: text
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log(`✅ [HTTP API DELIVERED via Brevo] ID: ${data.messageId} to ${toEmail}`);
+        return { success: true, messageId: data.messageId };
+      }
+      return { success: false, error: data.message || "Brevo API error" };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  return null;
 };
 
 /**
@@ -200,6 +264,22 @@ TaskFlow Management Team
 </body>
 </html>
 `;
+
+  const senderDisplayName = managerName ? `${managerName} via TaskFlow` : "TaskFlow";
+
+  // 1. Try HTTPS REST API first if configured (Bypasses cloud SMTP port blocking on Render free tier)
+  if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
+    const httpResult = await sendViaHttpApi({
+      fromName: senderDisplayName,
+      fromEmail: user,
+      toEmail,
+      toName: internName,
+      subject: emailSubject,
+      html: emailHtml,
+      text: emailText
+    });
+    if (httpResult) return httpResult;
+  }
 
   // Fallback if credentials are not configured in environment
   if (!transporter || !user) {
