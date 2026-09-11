@@ -6,9 +6,6 @@
       <div>
         <div class="dash-title-row">
           <h1 class="dash-title">{{ isManager ? 'Manager Portal' : 'Intern Dashboard' }}</h1>
-          <span class="role-badge" [class.role-mgr]="isManager" [class.role-int]="!isManager">
-            {{ isManager ? 'Manager' : 'Intern' }}
-          </span>
         </div>
         <p>
           Welcome back, <strong>{{ userName || 'User' }}</strong>.

@@ -134,6 +134,56 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 
 });
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  const { securityCode, newPassword } = req.body;
+
+  if (!email || !securityCode || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, security code and new password are required"
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be at least 6 characters"
+    });
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Account not found"
+    });
+  }
+
+  const expectedCode = (
+    (user.role === "manager"
+      ? process.env.MANAGER_ACCESS_CODE
+      : process.env.INTERN_RESET_CODE) || ""
+  ).trim();
+
+  if (!expectedCode || securityCode.trim() !== expectedCode) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid security code"
+    });
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successfully"
+  });
+});
+
 const getMe = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user.userId).select("-password");
@@ -266,6 +316,7 @@ module.exports = {
 
   registerUser,
   loginUser,
+  resetPassword,
   getMe,
   updateMe,
   changePassword

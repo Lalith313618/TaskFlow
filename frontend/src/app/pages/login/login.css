@@ -118,6 +118,42 @@
   font-size: 14px;
 }
 
+.reset-heading {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.reset-help {
+  margin: 0 0 22px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.forgot-password,
+.secondary-action {
+  width: auto;
+  margin: 14px auto 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forgot-password:hover,
+.secondary-action:hover {
+  background: transparent;
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.secondary-action {
+  display: block;
+}
+
 /* FORM */
 
 .form-group {
@@ -206,6 +242,26 @@ button:disabled {
   opacity: 0.6;
 
   cursor: not-allowed;
+}
+
+.login-form .forgot-password,
+.login-form .secondary-action {
+  display: block;
+  width: auto;
+  margin: 14px auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-form .forgot-password:hover,
+.login-form .secondary-action:hover {
+  background: transparent;
+  color: var(--primary-dark);
+  text-decoration: underline;
 }
 
 /* ERROR */
