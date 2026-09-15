@@ -53,6 +53,24 @@ export class TaskDetails implements OnInit, OnDestroy {
     );
   }
 
+  get isTaskOwner(): boolean {
+    if (!this.task || !this.currentUserId) return false;
+    const ownerId = this.task.assignedBy?._id || this.task.assignedBy?.id || this.task.assignedBy;
+    return String(ownerId) === String(this.currentUserId);
+  }
+
+  get canUpdateStatus(): boolean {
+    if (!this.task || !this.currentUserId) return false;
+    if (!this.isManager) return true;
+    return this.isTaskOwner;
+  }
+
+  get canAccessThread(): boolean {
+    if (!this.task || !this.currentUserId) return false;
+    if (!this.isManager) return true;
+    return this.isTaskOwner;
+  }
+
   formatDueDate(dueDateStr: string | Date | undefined): string {
     if (!dueDateStr) return 'No deadline';
     const d = new Date(dueDateStr);
@@ -139,7 +157,9 @@ export class TaskDetails implements OnInit, OnDestroy {
         this.isLoading = false;
         if (res.success && res.data) {
           this.task = res.data;
-          this.loadResponses();
+          if (this.canAccessThread) {
+            this.loadResponses();
+          }
         }
         this.cdr.markForCheck();
       },
@@ -220,6 +240,12 @@ export class TaskDetails implements OnInit, OnDestroy {
   }
 
   sendResponse(): void {
+    if (!this.canAccessThread) {
+      this.errorMessage = 'Access denied: Only the owner manager who created this task can participate in this thread.';
+      this.cdr.markForCheck();
+      return;
+    }
+
     if (this.isSending || !this.newMessage.trim()) return;
 
     this.isSending = true;

@@ -100,7 +100,6 @@ const getTasks = asyncHandler(async (req, res) => {
   const filter = {};
 
   if (req.user.role === "manager") {
-    filter.assignedBy = req.user.userId;
     if (internId) {
       filter.assignedTo = internId;
     }
@@ -195,22 +194,23 @@ const updateTask = asyncHandler(async (req, res) => {
   }
 
   const userId = req.user.userId.toString();
-  const isManager = req.user.role === "manager";
-  const isAssignedIntern = task.assignedTo && task.assignedTo.toString() === userId;
+  const isOwnerManager = req.user.role === "manager" && task.assignedBy && task.assignedBy.toString() === userId;
+  const isAssignedIntern = (task.assignedTo && task.assignedTo.toString() === userId) ||
+                           (task.user && task.user.toString() === userId);
 
-  if (!isManager && !isAssignedIntern) {
+  if (!isOwnerManager && !isAssignedIntern) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to update this task"
+      message: "Access denied: Only the owner manager who created this task can edit it"
     });
   }
 
-  if (!isManager && isAssignedIntern) {
+  if (isAssignedIntern && !isOwnerManager) {
     if (req.body.status) {
       task.status = req.body.status;
       await task.save();
     }
-  } else {
+  } else if (isOwnerManager) {
 
     if (req.body.title !== undefined) task.title = req.body.title;
     if (req.body.description !== undefined) task.description = req.body.description;
@@ -267,10 +267,10 @@ const updateTaskStatus = asyncHandler(async (req, res) => {
   const isAssigningManager = task.assignedBy && task.assignedBy.toString() === userId;
   const isLegacyUser = task.user && task.user.toString() === userId;
 
-  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser && req.user.role !== "manager") {
+  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to update this task's status"
+      message: "Access denied: Only the owner manager who created this task or the assigned intern can update its status"
     });
   }
 
@@ -313,7 +313,7 @@ const getTaskStats = asyncHandler(async (req, res) => {
   let queryFilter = {};
 
   if (isManager) {
-    queryFilter = { assignedBy: userId };
+    queryFilter = {};
   } else {
     queryFilter = {
       $or: [{ assignedTo: userId }, { user: userId }]
@@ -356,28 +356,31 @@ const getTaskStats = asyncHandler(async (req, res) => {
 });
 
 const deleteTask = asyncHandler(async (req, res) => {
-  const filter = { _id: req.params.id };
+  const task = await Task.findById(req.params.id);
 
-  if (req.user.role !== "manager") {
-    return res.status(403).json({
-      success: false,
-      message: "Only managers can delete tasks"
-    });
-  }
-
-  const deletedTask = await Task.findOneAndDelete(filter);
-
-  if (!deletedTask) {
+  if (!task) {
     return res.status(404).json({
       success: false,
       message: "Task not found"
     });
   }
 
+  const userId = req.user.userId.toString();
+  const isOwnerManager = req.user.role === "manager" && task.assignedBy && task.assignedBy.toString() === userId;
+
+  if (!isOwnerManager) {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied: Only the owner manager who created this task can delete it"
+    });
+  }
+
+  await Task.findByIdAndDelete(req.params.id);
+
   res.status(200).json({
     success: true,
     message: "Task deleted successfully",
-    data: deletedTask
+    data: task
   });
 });
 
@@ -396,11 +399,12 @@ const submitTaskWork = asyncHandler(async (req, res) => {
 
   const isAssignedIntern = task.assignedTo && task.assignedTo.toString() === userId;
   const isLegacyUser = task.user && task.user.toString() === userId;
+  const isOwnerManager = req.user.role === "manager" && task.assignedBy && task.assignedBy.toString() === userId;
 
-  if (!isAssignedIntern && !isLegacyUser && req.user.role !== "manager") {
+  if (!isAssignedIntern && !isLegacyUser && !isOwnerManager) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to submit work for this task"
+      message: "Access denied: You are not authorized to submit work for this task"
     });
   }
 

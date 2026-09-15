@@ -18,6 +18,7 @@ export class Tasks implements OnInit {
   isLoading = false;
   isSyncing = false;
   isManager = false;
+  currentUserId = '';
   errorMessage = '';
   successMessage = '';
 
@@ -45,6 +46,10 @@ export class Tasks implements OnInit {
 
   ngOnInit(): void {
     this.isManager = this.authService.isManager();
+    const currentUser = this.authService.getUser();
+    if (currentUser) {
+      this.currentUserId = String(currentUser.id || currentUser._id || '');
+    }
 
     // 1. Instant cache load: render existing tasks immediately on refresh (0ms latency, zero flicker)
     const cached = localStorage.getItem('taskflow_cached_tasks');
@@ -292,5 +297,29 @@ export class Tasks implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  isTaskOwner(task: any): boolean {
+    if (!task || !this.currentUserId) return false;
+    const ownerId = task.assignedBy?._id || task.assignedBy?.id || task.assignedBy;
+    return String(ownerId) === String(this.currentUserId);
+  }
+
+  canEditTask(task: any): boolean {
+    return this.isManager && this.isTaskOwner(task);
+  }
+
+  canDeleteTask(task: any): boolean {
+    return this.isManager && this.isTaskOwner(task);
+  }
+
+  canChangeStatus(task: any): boolean {
+    if (!this.isManager) return true;
+    return this.isTaskOwner(task);
+  }
+
+  canAccessThread(task: any): boolean {
+    if (!this.isManager) return true;
+    return this.isTaskOwner(task);
   }
 }

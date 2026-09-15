@@ -168,6 +168,28 @@
 .status-in-progress { background: #e0e7ff; color: #4338ca; }
 .status-completed { background: #dcfce7; color: #15803d; }
 
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.owner-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.readonly-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
 .task-title {
   margin: 0 0 8px;
   font-size: 18px;

@@ -148,6 +148,17 @@ export class CreateTask implements OnInit {
               this.dueDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
             }
           }
+          const user = this.authService.getUser();
+          const currentUserId = String(user?.id || user?._id || '');
+          const ownerId = String(task.assignedBy?._id || task.assignedBy?.id || task.assignedBy || '');
+
+          if (this.isManager && currentUserId && ownerId && currentUserId !== ownerId) {
+            this.errorMessage = 'Access denied: Only the owner manager who created this task can edit it.';
+            this.isLoading = false;
+            this.cdr.markForCheck();
+            return;
+          }
+
           if (task.assignedTo) {
             this.assignedTo = task.assignedTo._id || task.assignedTo;
             this.internEmail = task.assignedTo.email || '';

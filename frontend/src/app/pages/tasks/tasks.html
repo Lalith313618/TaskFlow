@@ -2,7 +2,7 @@
   <div class="tasks-container">
     <div class="tasks-header">
       <div>
-        <h1>{{ isManager ? 'Assigned Intern Tasks' : 'My Assigned Tasks' }}</h1>
+        <h1>{{ isManager ? 'All Assigned Tasks' : 'My Assigned Tasks' }}</h1>
         <p>{{ isManager ? 'Track task execution and intern responses across the organization.' : 'Review deadlines, update work status, and message your manager.' }}</p>
       </div>
       <div class="header-actions">
@@ -80,9 +80,14 @@
         @for (task of tasks; track task._id) {
           <div class="task-card" [class.task-completed]="task.status === 'completed'">
             <div class="task-header">
-              <span class="badge priority-badge" [class]="'priority-' + task.priority">
-                {{ task.priority | uppercase }}
-              </span>
+              <div class="header-badges">
+                <span class="badge priority-badge" [class]="'priority-' + task.priority">
+                  {{ task.priority | uppercase }}
+                </span>
+                @if (isManager && isTaskOwner(task)) {
+                  <span class="badge owner-badge" title="You created this task">⭐ Owner</span>
+                }
+              </div>
               <span class="badge status-badge" [class]="'status-' + task.status">
                 {{ task.status }}
               </span>
@@ -94,11 +99,11 @@
             }
 
             <div class="task-info-list">
-              @if (isManager && task.assignedTo) {
-                <span>🎓 <strong>Intern:</strong> {{ task.assignedTo.name }} ({{ task.assignedTo.email }})</span>
+              @if (task.assignedTo) {
+                <span>🎓 <strong>Intern:</strong> {{ task.assignedTo.name || task.assignedTo }}@if (task.assignedTo.email) { ({{ task.assignedTo.email }})}</span>
               }
-              @if (!isManager && task.assignedBy) {
-                <span>👑 <strong>Manager:</strong> {{ task.assignedBy.name }}</span>
+              @if (task.assignedBy) {
+                <span>👑 <strong>Manager:</strong> {{ task.assignedBy.name || task.assignedBy }}@if (task.assignedBy.email) { ({{ task.assignedBy.email }})}</span>
               }
               @if (task.createdAt) {
                 <span>🕒 <strong>Assigned:</strong> {{ task.createdAt | date:'mediumDate' }} at {{ task.createdAt | date:'shortTime' }}</span>
@@ -112,22 +117,32 @@
               <div class="task-actions">
                 <div class="status-group">
                   <span class="status-label">Status:</span>
-                  <select [ngModel]="task.status" (ngModelChange)="updateTaskStatus(task, $event)" class="status-select">
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
+                  @if (canChangeStatus(task)) {
+                    <select [ngModel]="task.status" (ngModelChange)="updateTaskStatus(task, $event)" class="status-select">
+                      <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  } @else {
+                    <span class="readonly-status" title="Only the owner manager who created this task can update its status">
+                      {{ task.status }}
+                    </span>
+                  }
                 </div>
 
                 <div class="task-btn-group">
-                  <a [routerLink]="['/tasks', task._id]" class="icon-button thread-btn" title="Task Discussion">
-                    💬 Thread
-                  </a>
+                  @if (canAccessThread(task)) {
+                    <a [routerLink]="['/tasks', task._id]" class="icon-button thread-btn" title="Task Discussion">
+                      💬 Thread
+                    </a>
+                  }
 
-                  @if (isManager) {
+                  @if (canEditTask(task)) {
                     <a [routerLink]="['/create-task']" [queryParams]="{ id: task._id }" class="icon-button edit-btn" title="Edit Task">
                       ✏️
                     </a>
+                  }
+                  @if (canDeleteTask(task)) {
                     <button (click)="confirmDelete(task)" class="icon-button delete-btn" title="Delete Task">
                       🗑️
                     </button>

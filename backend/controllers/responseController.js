@@ -26,10 +26,10 @@ const addResponse = asyncHandler(async (req, res) => {
   const isAssigningManager = task.assignedBy && task.assignedBy.toString() === userId.toString();
   const isLegacyUser = task.user && task.user.toString() === userId.toString();
 
-  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser && req.user.role !== "manager") {
+  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to respond to this task"
+      message: "Access denied: Only the owner manager who created this task or the assigned intern can participate in this thread"
     });
   }
 
@@ -87,10 +87,10 @@ const getResponses = asyncHandler(async (req, res) => {
   const isAssigningManager = task.assignedBy && task.assignedBy.toString() === userId.toString();
   const isLegacyUser = task.user && task.user.toString() === userId.toString();
 
-  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser && req.user.role !== "manager") {
+  if (!isAssignedIntern && !isAssigningManager && !isLegacyUser) {
     return res.status(403).json({
       success: false,
-      message: "You are not authorized to view messages for this task"
+      message: "Access denied: Only the owner manager who created this task or the assigned intern can view this thread"
     });
   }
 

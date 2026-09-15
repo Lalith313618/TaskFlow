@@ -112,6 +112,9 @@ export class AuthService {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
+      localStorage.removeItem('taskflow_cached_tasks');
+      localStorage.removeItem('taskflow_cached_stats');
+      localStorage.removeItem('taskflow_cached_interns');
     }
     this.currentUserSubject.next(null);
   }

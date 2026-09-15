@@ -36,7 +36,8 @@
                   id="statusSelect"
                   [ngModel]="task.status"
                   (ngModelChange)="updateStatus($event)"
-                  [disabled]="isUpdatingStatus"
+                  [disabled]="isUpdatingStatus || !canUpdateStatus"
+                  [title]="!canUpdateStatus ? 'Only the assigning manager or assigned intern can update status' : ''"
                   class="status-select-btn"
                 >
                   <option value="pending">Pending</option>
@@ -312,41 +313,49 @@
             <p>Exchange feedback, progress updates, and questions regarding this assignment.</p>
           </div>
 
-          <div class="messages-container">
-            @if (responses.length === 0) {
-              <div class="empty-messages">
-                <span class="empty-msg-icon">💬</span>
-                <p>No messages yet. Start the conversation by sending an update or question below!</p>
-              </div>
-            }
-
-            @for (msg of responses; track msg._id) {
-              <div class="message-bubble" [class.my-message]="msg.sender?._id === currentUserId">
-                <div class="bubble-header">
-                  <span class="sender-name">{{ msg.sender?.name || 'User' }}</span>
-                  <span class="sender-badge" [class.badge-mgr]="msg.sender?.role === 'manager'" [class.badge-int]="msg.sender?.role === 'intern'">
-                    {{ msg.sender?.role === 'manager' ? '👑 Manager' : '🎓 Intern' }}
-                  </span>
-                  <span class="bubble-time">{{ msg.createdAt | date:'shortTime' }}</span>
+          @if (!canAccessThread) {
+            <div class="thread-restricted-box">
+              <span class="restricted-icon">🔒</span>
+              <h4>Thread Restricted</h4>
+              <p>Only the owner manager who created this task and the assigned intern can participate in this communication thread.</p>
+            </div>
+          } @else {
+            <div class="messages-container">
+              @if (responses.length === 0) {
+                <div class="empty-messages">
+                  <span class="empty-msg-icon">💬</span>
+                  <p>No messages yet. Start the conversation by sending an update or question below!</p>
                 </div>
-                <div class="bubble-body">{{ msg.message }}</div>
-              </div>
-            }
-          </div>
+              }
 
-          <form (ngSubmit)="sendResponse()" class="message-input-form">
-            <textarea
-              [(ngModel)]="newMessage"
-              name="newMessage"
-              placeholder="Type your response or update..."
-              rows="2"
-              (keydown)="onKeydown($event)"
-              required
-            ></textarea>
-            <button type="submit" [disabled]="isSending || !newMessage.trim()" class="send-btn">
-              {{ isSending ? 'Sending...' : 'Send 📤' }}
-            </button>
-          </form>
+              @for (msg of responses; track msg._id) {
+                <div class="message-bubble" [class.my-message]="msg.sender?._id === currentUserId">
+                  <div class="bubble-header">
+                    <span class="sender-name">{{ msg.sender?.name || 'User' }}</span>
+                    <span class="sender-badge" [class.badge-mgr]="msg.sender?.role === 'manager'" [class.badge-int]="msg.sender?.role === 'intern'">
+                      {{ msg.sender?.role === 'manager' ? '👑 Manager' : '🎓 Intern' }}
+                    </span>
+                    <span class="bubble-time">{{ msg.createdAt | date:'shortTime' }}</span>
+                  </div>
+                  <div class="bubble-body">{{ msg.message }}</div>
+                </div>
+              }
+            </div>
+
+            <form (ngSubmit)="sendResponse()" class="message-input-form">
+              <textarea
+                [(ngModel)]="newMessage"
+                name="newMessage"
+                placeholder="Type your response or update..."
+                rows="2"
+                (keydown)="onKeydown($event)"
+                required
+              ></textarea>
+              <button type="submit" [disabled]="isSending || !newMessage.trim()" class="send-btn">
+                {{ isSending ? 'Sending...' : 'Send 📤' }}
+              </button>
+            </form>
+          }
 
         </div>
 
