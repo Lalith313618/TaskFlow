@@ -8,7 +8,6 @@ const {
   clearAllNotifications
 } = require("../controllers/notificationController");
 
-// All routes require authentication
 router.use(authMiddleware);
 
 router.get("/", getMyNotifications);

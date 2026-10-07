@@ -14,7 +14,6 @@ import { AuthService } from '../../services/auth.service';
 })
 export class CreateIntern implements OnInit {
 
-  // Registration form fields
   name = '';
   email = '';
   password = '';
@@ -23,13 +22,11 @@ export class CreateIntern implements OnInit {
   registerSuccess = '';
   registerError = '';
 
-  // Interns directory state
   interns: any[] = [];
   filteredInterns: any[] = [];
   searchQuery = '';
   isLoadingInterns = false;
 
-  // Edit modal state
   editingIntern: any = null;
   editName = '';
   editEmail = '';
@@ -38,7 +35,6 @@ export class CreateIntern implements OnInit {
   editError = '';
   editSuccess = '';
 
-  // Delete modal state
   internToDelete: any = null;
   isDeleting = false;
   deleteError = '';
@@ -144,7 +140,6 @@ export class CreateIntern implements OnInit {
     });
   }
 
-  // Edit methods
   openEditModal(intern: any): void {
     this.editingIntern = intern;
     this.editName = intern.name;
@@ -213,7 +208,6 @@ export class CreateIntern implements OnInit {
     });
   }
 
-  // Delete methods
   confirmDelete(intern: any): void {
     this.internToDelete = intern;
     this.deleteError = '';

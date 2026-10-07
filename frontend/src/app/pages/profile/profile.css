@@ -10,7 +10,6 @@
   margin: 0 auto;
 }
 
-/* HEADER */
 .profile-header {
   display: flex;
   align-items: center;
@@ -69,7 +68,6 @@
   background: #dc2626;
 }
 
-/* LAYOUT GRID */
 .profile-grid {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -82,7 +80,6 @@
   gap: 24px;
 }
 
-/* CARDS */
 .profile-card {
   padding: 24px;
   background: white;
@@ -102,7 +99,6 @@
   font-size: 13px;
 }
 
-/* SUMMARY CARD */
 .summary-card {
   display: flex;
   flex-direction: column;
@@ -163,7 +159,6 @@
   font-size: 12px;
 }
 
-/* FORMS */
 .form-group {
   margin-bottom: 16px;
   display: flex;
@@ -213,7 +208,6 @@
   cursor: not-allowed;
 }
 
-/* ALERTS */
 .alert {
   padding: 10px 14px;
   border-radius: 6px;
@@ -241,7 +235,6 @@
   color: #64748b;
 }
 
-/* MOBILE */
 @media (max-width: 768px) {
   .profile-page {
     padding: 20px 15px;

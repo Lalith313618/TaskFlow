@@ -24,7 +24,6 @@ export class CreateTask implements OnInit {
   priority = 'medium';
   dueDate = '';
 
-  // Assignment fields
   internEmail = '';
   assignedTo = '';
   internsList: any[] = [];
@@ -47,14 +46,12 @@ export class CreateTask implements OnInit {
   ngOnInit(): void {
     this.isManager = this.authService.isManager();
 
-    // Check if manager is assigning from intern directory
     const queryInternEmail = this.route.snapshot.queryParamMap.get('internEmail');
     const queryInternId = this.route.snapshot.queryParamMap.get('internId');
 
     if (queryInternEmail) this.internEmail = queryInternEmail;
     if (queryInternId) this.assignedTo = queryInternId;
 
-    // Instant cache load for interns dropdown (0ms latency)
     try {
       const cached = localStorage.getItem('taskflow_cached_interns');
       if (cached) {

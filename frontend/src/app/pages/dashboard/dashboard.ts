@@ -44,7 +44,6 @@ export class Dashboard implements OnInit, OnDestroy {
       this.userName = user.name;
     }
 
-    // 1. Instant Cache Load (0ms - zero delay or flicker when switching screens or refreshing)
     try {
       const cached = localStorage.getItem('taskflow_cached_stats');
       if (cached) {

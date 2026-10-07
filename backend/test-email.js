@@ -20,7 +20,7 @@ sendTaskAssignedEmail({
   internName: 'Test User',
   taskTitle: 'Complete Onboarding & Setup Workspace',
   taskDescription: 'This is a test notification confirming that TaskFlow email integration is operational.',
-  dueDate: new Date(Date.now() + 86400000 * 3), // 3 days from now
+  dueDate: new Date(Date.now() + 86400000 * 3),
   priority: 'high',
   managerName: 'TaskFlow Admin'
 }).then(result => {

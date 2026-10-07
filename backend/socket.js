@@ -11,10 +11,8 @@ function initSocket(server) {
   });
 
   io.on('connection', (socket) => {
-    // Client joins their user-specific notification room
     socket.on('join_user', (userId) => {
       if (userId) {
-        // Leave any previous user notification rooms to prevent cross-account leaks
         for (const room of socket.rooms) {
           if (typeof room === 'string' && room.startsWith('user_') && room !== `user_${userId}`) {
             socket.leave(room);
@@ -24,21 +22,18 @@ function initSocket(server) {
       }
     });
 
-    // Client leaves user notification room (e.g. on logout)
     socket.on('leave_user', (userId) => {
       if (userId) {
         socket.leave(`user_${userId}`);
       }
     });
 
-    // Client enters a task discussion thread room
     socket.on('join_task', (taskId) => {
       if (taskId) {
         socket.join(`task_${taskId}`);
       }
     });
 
-    // Client leaves a task discussion room
     socket.on('leave_task', (taskId) => {
       if (taskId) {
         socket.leave(`task_${taskId}`);
@@ -46,7 +41,6 @@ function initSocket(server) {
     });
 
     socket.on('disconnect', () => {
-      // Clean up on disconnect
     });
   });
 

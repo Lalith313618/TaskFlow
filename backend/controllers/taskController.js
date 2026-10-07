@@ -49,7 +49,6 @@ const createTask = asyncHandler(async (req, res) => {
     assignedBy: { _id: managerUser._id, name: managerUser.name, email: managerUser.email }
   };
 
-  // Dispatch email notification asynchronously (never blocks response)
   if (internUser && internUser.email) {
     sendTaskAssignedEmail({
       toEmail: internUser.email,
@@ -66,7 +65,6 @@ const createTask = asyncHandler(async (req, res) => {
     });
   }
 
-  // Non-blocking in-app notification & socket broadcast
   sendNotification({
     recipient: internUser._id,
     sender: req.user.userId,
@@ -127,7 +125,6 @@ const getTasks = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  // Parallel database execution for 2x faster load times
   const [totalTasks, tasks] = await Promise.all([
     Task.countDocuments(filter),
     Task.find(filter)

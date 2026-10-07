@@ -10,7 +10,6 @@
   margin: 0 auto;
 }
 
-/* HEADER */
 .tasks-header {
   display: flex;
   align-items: center;
@@ -52,7 +51,6 @@
   background: #115e59;
 }
 
-/* CONTROLS BAR */
 .controls-bar {
   display: flex;
   justify-content: space-between;
@@ -116,7 +114,6 @@
   background: white;
 }
 
-/* GRID & CARDS */
 .tasks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -339,7 +336,6 @@
   border: 1px solid #fecaca;
 }
 
-/* PAGINATION */
 .pagination {
   display: flex;
   justify-content: center;
@@ -367,7 +363,6 @@
   color: #64748b;
 }
 
-/* MODAL */
 .modal-overlay {
   position: fixed;
   top: 0;

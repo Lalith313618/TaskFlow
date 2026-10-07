@@ -44,6 +44,8 @@ cd backend
 npm install
 cp .env.example .env
 # Update your .env configuration (PORT, MONGO_URI, JWT_SECRET, etc.)
+
+# If PORT is already in use, the backend automatically tries the next available port.
 npm run dev
 ```
 

@@ -1,8 +1,3 @@
-/**
- * Centralized API and Backend configuration.
- * Automatically switches between local development (localhost:5000)
- * and production deployed backend (https://taskflow-1lev.onrender.com).
- */
 export function getBackendUrl(): string {
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
@@ -18,6 +13,5 @@ export function getBackendUrl(): string {
     }
   }
 
-  // Deployed Render backend URL
   return 'https://taskflow-1lev.onrender.com';
 }

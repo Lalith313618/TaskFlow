@@ -10,8 +10,6 @@
   margin: 0 auto;
 }
 
-/* HEADER */
-
 .dashboard-header {
   display: flex;
   align-items: center;
@@ -87,8 +85,6 @@
   background: #115e59;
 }
 
-/* STATS */
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -113,8 +109,6 @@
   font-size: 28px;
   color: #0f766e;
 }
-
-/* OVERVIEW */
 
 .dashboard-section {
   margin-top: 25px;
@@ -160,8 +154,6 @@
   color: #0f766e;
 }
 
-/* LOADING */
-
 .loading {
   padding: 30px;
   text-align: center;
@@ -169,8 +161,6 @@
   border-radius: 8px;
   color: #64748b;
 }
-
-/* ERROR */
 
 .error-container {
   display: flex;
@@ -205,8 +195,6 @@
   background: #115e59;
 }
 
-/* MOBILE */
-
 @media (max-width: 700px) {
 
   .dashboard-page {
@@ -240,10 +228,6 @@
     padding: 20px;
   }
 }
-
-/* ==========================================================
-   DASHBOARD UTILITIES & RECENT TASKS FEED
-   ========================================================== */
 
 .dash-title-row {
   display: flex;

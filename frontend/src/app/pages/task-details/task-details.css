@@ -167,7 +167,6 @@
   color: #0f172a;
 }
 
-/* Discussion Card */
 .task-discussion-card {
   display: flex;
   flex-direction: column;
@@ -346,10 +345,6 @@
   background: #dcfce7;
   color: #166534;
 }
-
-/* ==========================================================
-   WORK SUBMISSION & PROOF SECTION
-   ========================================================== */
 
 .submission-card-header {
   display: flex;
@@ -548,7 +543,6 @@
   background: #99f6e4;
 }
 
-/* Empty Placeholder */
 .empty-submission-placeholder {
   text-align: center;
   padding: 30px 20px;
@@ -577,7 +571,6 @@
   margin: 0 auto;
 }
 
-/* Submission Form */
 .submission-form {
   display: flex;
   flex-direction: column;
@@ -646,7 +639,6 @@
   color: #64748b;
 }
 
-/* Staged Files */
 .staged-files-list {
   background: #f8fafc;
   border-radius: 8px;
@@ -789,7 +781,6 @@
   background: #e2e8f0;
 }
 
-/* Lightbox Modal */
 .image-modal-backdrop {
   position: fixed;
   inset: 0;

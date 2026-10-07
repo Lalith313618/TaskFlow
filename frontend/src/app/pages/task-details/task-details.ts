@@ -31,7 +31,6 @@ export class TaskDetails implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
 
-  // Work Submission State
   submissionDescription = '';
   selectedFiles: File[] = [];
   selectedFilePreviews: { name: string; size: string; isImage: boolean; previewUrl?: string }[] = [];
@@ -40,7 +39,6 @@ export class TaskDetails implements OnInit, OnDestroy {
   submissionError = '';
   isEditingSubmission = false;
 
-  // Image Lightbox Modal
   previewModalImage: string | null = null;
 
   get isWorkSubmitted(): boolean {
@@ -105,7 +103,6 @@ export class TaskDetails implements OnInit, OnDestroy {
       this.loadTaskData();
       this.socketService.joinTask(this.taskId);
 
-      // Listen for incoming live chat messages
       this.socketSubs.push(
         this.socketService.onNewMessage().subscribe((data) => {
           if (data && data.taskId === this.taskId && data.response) {
@@ -114,7 +111,6 @@ export class TaskDetails implements OnInit, OnDestroy {
         })
       );
 
-      // Listen for status changes
       this.socketSubs.push(
         this.socketService.onStatusChanged().subscribe((data) => {
           if (data && data.taskId === this.taskId && this.task) {
@@ -124,7 +120,6 @@ export class TaskDetails implements OnInit, OnDestroy {
         })
       );
 
-      // Listen for live work submissions
       this.socketSubs.push(
         this.socketService.onWorkSubmitted().subscribe((data) => {
           if (data && data.taskId === this.taskId && this.task) {
@@ -219,7 +214,6 @@ export class TaskDetails implements OnInit, OnDestroy {
       if (newId && existingId && newId === existingId) {
         return true;
       }
-      // Deduplicate by sender + identical message within 4 seconds window
       const sameSender = (r.sender?._id || r.sender)?.toString() === (newResp.sender?._id || newResp.sender)?.toString();
       const sameMessage = (r.message || '').trim() === (newResp.message || '').trim();
       const timeDiff = Math.abs(new Date(r.createdAt || 0).getTime() - new Date(newResp.createdAt || 0).getTime());
@@ -250,7 +244,7 @@ export class TaskDetails implements OnInit, OnDestroy {
 
     this.isSending = true;
     const msg = this.newMessage.trim();
-    this.newMessage = ''; // Clear immediately to prevent accidental duplicate submission
+    this.newMessage = '';
 
     this.taskService.addResponse(this.taskId, msg).subscribe({
       next: (res) => {
@@ -262,14 +256,12 @@ export class TaskDetails implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isSending = false;
-        this.newMessage = msg; // Restore message on failure so user doesn't lose text
+        this.newMessage = msg;
         this.errorMessage = err.error?.message || 'Failed to send message';
         this.cdr.markForCheck();
       }
     });
   }
-
-  // --- Work Submission & Attachments Handling ---
 
   onFilesSelected(event: any): void {
     const fileList: FileList = event.target.files;
@@ -277,7 +269,6 @@ export class TaskDetails implements OnInit, OnDestroy {
 
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      // Limit 20 MB
       if (file.size > 20 * 1024 * 1024) {
         alert(`File "${file.name}" exceeds the 20 MB size limit.`);
         continue;
@@ -304,7 +295,6 @@ export class TaskDetails implements OnInit, OnDestroy {
       this.selectedFilePreviews.push(previewItem);
     }
 
-    // Reset input value so same files can be re-selected if removed
     event.target.value = '';
     this.cdr.markForCheck();
   }
@@ -344,7 +334,7 @@ export class TaskDetails implements OnInit, OnDestroy {
           this.selectedFiles = [];
           this.selectedFilePreviews = [];
           this.isEditingSubmission = false;
-          this.loadResponses(); // Refresh conversation thread
+          this.loadResponses();
         }
         this.cdr.markForCheck();
 

@@ -22,7 +22,6 @@ export class Tasks implements OnInit {
   errorMessage = '';
   successMessage = '';
 
-  // Filter, Sort, Search, Pagination params
   search = '';
   status = '';
   priority = '';
@@ -33,7 +32,6 @@ export class Tasks implements OnInit {
   totalPages = 1;
   totalTasks = 0;
 
-  // Task deletion state
   taskToDelete: any = null;
 
   constructor(
@@ -51,7 +49,6 @@ export class Tasks implements OnInit {
       this.currentUserId = String(currentUser.id || currentUser._id || '');
     }
 
-    // 1. Instant cache load: render existing tasks immediately on refresh (0ms latency, zero flicker)
     const cached = localStorage.getItem('taskflow_cached_tasks');
     if (cached) {
       try {
@@ -64,7 +61,6 @@ export class Tasks implements OnInit {
       } catch (_) {}
     }
 
-    // 2. Consume one-time assignment notification from TaskService (never persists on page refresh)
     const pending = this.taskService.consumePendingAssignment();
     if (pending.task) {
       this.tasks = [pending.task, ...this.tasks.filter(t => t._id !== pending.task._id)];
@@ -80,7 +76,6 @@ export class Tasks implements OnInit {
       }, 4000);
     }
 
-    // Sanitize browser history state to eliminate any stale persisted navigation states
     try {
       if (typeof window !== 'undefined' && window.history?.state) {
         const state = window.history.state;
@@ -252,13 +247,11 @@ export class Tasks implements OnInit {
     const id = task._id;
     const taskIndex = this.tasks.findIndex(t => t._id === id);
 
-    // 1. INSTANT OPTIMISTIC REMOVAL (0ms latency - UI updates immediately)
     this.tasks = this.tasks.filter(t => t._id !== id);
     if (this.totalTasks > 0) this.totalTasks -= 1;
     this.taskToDelete = null;
     this.successMessage = 'Task deleted successfully';
 
-    // Immediately remove from localStorage cache so refresh won't flash the deleted task
     this.removeCachedTask(id);
     if (!this.internId && !this.search && !this.status && !this.priority && this.page === 1) {
       this.saveTasksCache(this.tasks);
@@ -271,20 +264,16 @@ export class Tasks implements OnInit {
       this.cdr.markForCheck();
     }, 3000);
 
-    // 2. Perform background server deletion
     this.taskService.deleteTask(id).subscribe({
       next: () => {
-        // Ensure cache is definitely cleansed of deleted task
         this.removeCachedTask(id);
 
-        // If current page is now empty and there are other pages, adjust page
         if (this.tasks.length === 0 && this.page > 1) {
           this.page -= 1;
           this.loadTasks();
         }
       },
       error: (err) => {
-        // Rollback on server error
         if (taskIndex !== -1) {
           this.tasks.splice(taskIndex, 0, task);
           this.totalTasks += 1;

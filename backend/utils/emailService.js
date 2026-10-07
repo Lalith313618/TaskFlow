@@ -8,7 +8,6 @@ const createTransporter = () => {
     return null;
   }
 
-  // Strip any spaces in case Gmail App Password was pasted with spaces ("xxxx xxxx xxxx xxxx")
   const pass = rawPass.replace(/\s+/g, "");
 
   if (process.env.SMTP_HOST) {
@@ -23,9 +22,6 @@ const createTransporter = () => {
     });
   }
 
-  // In cloud environments (Render, Railway, AWS, DigitalOcean), port 587 / STARTTLS is often
-  // blocked or filtered by egress firewalls. Using smtp.gmail.com on port 465 with direct SSL
-  // is universally supported and prevents ETIMEDOUT / ECONNRESET errors.
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -40,12 +36,7 @@ const createTransporter = () => {
   });
 };
 
-/**
- * Send email via HTTPS REST API (Port 443).
- * Essential for cloud hosts (like Render free tier) that block outbound SMTP ports 25, 465, 587.
- */
 const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, html, text, replyTo }) => {
-  // 1. Resend API (HTTPS port 443 - free tier: 3,000 emails/month)
   if (process.env.RESEND_API_KEY) {
     try {
       const replyAddress = replyTo || fromEmail || process.env.EMAIL_USER || "taskflowmanger@gmail.com";
@@ -75,7 +66,6 @@ const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, h
     }
   }
 
-  // 2. Brevo / Sendinblue API (HTTPS port 443 - free tier: 300 emails/day)
   if (process.env.BREVO_API_KEY) {
     try {
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -106,14 +96,6 @@ const sendViaHttpApi = async ({ fromName, fromEmail, toEmail, toName, subject, h
   return null;
 };
 
-/**
- * Send notification email when a task is assigned to an intern.
- * Adheres to strict Anti-Spam standards (RFC 5322 compliance):
- * 1. Plain-text fallback (critical for SpamAssassin & Gmail filters)
- * 2. Proper authenticated From & Reply-To headers
- * 3. Bulletproof inline-styled HTML container with clean typography
- * 4. Legitimate transactional headers
- */
 const sendTaskAssignedEmail = async ({
   toEmail,
   internName,
@@ -141,14 +123,11 @@ const sendTaskAssignedEmail = async ({
   const priorityColor =
     priority === "high" ? "#dc2626" : priority === "low" ? "#16a34a" : "#ea580c";
 
-  // Production deployed Vercel frontend URL
   const frontendUrl = (process.env.FRONTEND_URL || "https://task-flow-lalith10.vercel.app").replace(/\/$/, "");
   const taskViewUrl = taskId ? `${frontendUrl}/tasks/${taskId}` : `${frontendUrl}/tasks`;
 
-  // Anti-spam subject: Professional, specific, no caps-lock spam words
   const emailSubject = `[TaskFlow] New Task Assigned: ${taskTitle}`;
 
-  // 1. Plain-text alternative (Prevents spam classification)
   const emailText = `Hello ${internName},
 
 You have been assigned a new task on TaskFlow by ${managerName || "your manager"}.
@@ -166,7 +145,6 @@ Best regards,
 TaskFlow Management Team
 `;
 
-  // 2. High-deliverability HTML layout (Table-based, inline CSS, no external spam triggers)
   const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -181,7 +159,6 @@ TaskFlow Management Team
       <td align="center">
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
           
-          <!-- Header Banner -->
           <tr>
             <td style="background-color: #0f766e; padding: 24px 30px; text-align: left;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -197,7 +174,6 @@ TaskFlow Management Team
             </td>
           </tr>
 
-          <!-- Main Content -->
           <tr>
             <td style="padding: 30px;">
               <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 700; color: #0f172a;">New Task Assignment</h2>
@@ -206,7 +182,6 @@ TaskFlow Management Team
                 Manager <strong>${managerName || "Management"}</strong> has assigned a new task to you. Here are the assignment details:
               </p>
 
-              <!-- Task Card Details -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px; padding: 18px 20px;">
                 <tr>
                   <td style="padding-bottom: 10px; font-size: 14px; color: #64748b; font-weight: 600; width: 110px;">Task Title:</td>
@@ -233,7 +208,6 @@ TaskFlow Management Team
                 }
               </table>
 
-              <!-- Call to Action Button -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
                   <td align="center">
@@ -250,7 +224,6 @@ TaskFlow Management Team
             </td>
           </tr>
 
-          <!-- Anti-Spam Footer -->
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 30px; text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 12px; color: #94a3b8;">
@@ -275,7 +248,6 @@ TaskFlow Management Team
     ? `${managerName} via TaskFlow (${senderEmail})`
     : `TaskFlow (${senderEmail})`;
 
-  // 1. Try HTTPS REST API first if configured (Bypasses cloud SMTP port blocking on Render free tier)
   if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
     const httpResult = await sendViaHttpApi({
       fromName: senderDisplayName,
@@ -293,7 +265,6 @@ TaskFlow Management Team
     console.warn("⚠️ HTTP API delivery skipped or restricted (e.g. Resend unverified recipient limit). Falling back to direct Gmail SMTP...", httpResult?.error);
   }
 
-  // Fallback if credentials are not configured in environment
   if (!transporter || !user) {
     console.warn("==================================================");
     console.warn("⚠️ [EMAIL NOT SENT - CONFIGURATION NEEDED]");

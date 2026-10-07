@@ -12,12 +12,10 @@ export class TaskService {
   private apiUrl = `${getBackendUrl()}/api/tasks`;
   private adminUrl = `${getBackendUrl()}/api/admin`;
 
-  // In-memory cache for instant section switching (Stale-While-Revalidate)
   private tasksCache = new Map<string, any>();
   private statsCache: any = null;
   private internsCache: any = null;
 
-  // One-time flash notification for task assignment / creation
   private pendingFlashMessage: string | null = null;
   private pendingNewTask: any | null = null;
 
@@ -76,7 +74,6 @@ export class TaskService {
     );
 
     let cached = this.tasksCache.get(cacheKey);
-    // If not in memory and requesting default page 1, check persistent localStorage
     if (!cached && cacheKey.includes('page=1') && !params?.search && !params?.status && !params?.priority && !params?.internId) {
       try {
         const local = localStorage.getItem('taskflow_cached_tasks');
@@ -95,7 +92,6 @@ export class TaskService {
     }
 
     if (!forceRefresh && cached) {
-      // Emit cached data immediately (0ms latency), then fetch fresh data in background
       return concat(of(cached), fetch$);
     }
 
@@ -151,7 +147,6 @@ export class TaskService {
     }
 
     if (!forceRefresh && cached) {
-      // Return cached stats immediately (0ms), then refresh silently in background
       return concat(of(cached), fetch$);
     }
 
@@ -199,7 +194,6 @@ export class TaskService {
     }
 
     if (!forceRefresh && cached) {
-      // Return cached interns immediately, then refresh silently in background
       return concat(of(cached), fetch$);
     }
 

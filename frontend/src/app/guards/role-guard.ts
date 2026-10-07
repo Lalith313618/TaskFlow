@@ -10,7 +10,6 @@ export const managerGuard: CanActivateFn = () => {
     return true;
   }
 
-  // Not manager -> redirect to dashboard
   return router.parseUrl('/dashboard');
 };
 

@@ -14,23 +14,19 @@ import { timeout } from 'rxjs';
 })
 export class Profile implements OnInit {
 
-  // User details
   user = {
     name: '',
     email: '',
     createdAt: ''
   };
 
-  // Profile Form
   name = '';
   email = '';
 
-  // Password Form
   currentPassword = '';
   newPassword = '';
   confirmPassword = '';
 
-  // Status messages
   isLoading = false;
   isSyncing = false;
   profileError = '';

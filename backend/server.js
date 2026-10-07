@@ -21,7 +21,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static uploaded files & images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
@@ -39,11 +38,27 @@ app.get('/', (req, res) => {
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = 5000;
+const configuredPort = Number.parseInt(process.env.PORT, 10);
+const START_PORT = Number.isNaN(configuredPort) ? DEFAULT_PORT : configuredPort;
 
-const server = http.createServer(app);
-initSocket(server);
+function listenOnAvailablePort(port) {
+  const server = http.createServer(app);
+  initSocket(server);
 
-server.listen(PORT, () => {
-  console.log(`TaskFlow API running on port ${PORT}`);
-});
+  server.once('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.warn(`Port ${port} is already in use. Trying port ${port + 1}...`);
+      listenOnAvailablePort(port + 1);
+      return;
+    }
+
+    throw error;
+  });
+
+  server.listen(port, () => {
+    console.log(`TaskFlow API running on port ${port}`);
+  });
+}
+
+listenOnAvailablePort(START_PORT);
